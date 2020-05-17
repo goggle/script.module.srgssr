@@ -83,8 +83,12 @@ class SRGSSR(object):
         self.language = LANGUAGE
         self.plugin_language = self.real_settings.getLocalizedString
         self.host_url = 'https://www.%s.ch' % bu
+        self.apiv3_url = None
         if bu == 'swi':
             self.host_url = 'https://play.swissinfo.ch'
+        if bu == 'srf':
+            self.apiv3_url = self.host_url + '/play/v3/api/srf/production/'
+
         self.data_uri = ('special://home/addons/%s/resources/'
                          'data') % self.addon_id
         self.media_uri = ('special://home/addons/%s/resources/'
@@ -332,6 +336,78 @@ class SRGSSR(object):
                 folders.append(item)
         self.build_folder_menu(folders)
 
+    def build_menu_apiv3(self, queries, mode, page=None, page_hash=None, name=''):
+        """
+        Builds a menu based on the API v3, which is supposed to be more stable
+        
+        Keyword arguments:
+        queries      -- an individual API to call with cursor support 
+                        or a list of apis to concatenate
+        mode         -- mode for the URL of the next folder
+        page         -- for compatibility, same as page_hash
+        page_hash    -- cursor for fetching the next items
+        name         -- name of the list
+        """
+        if isinstance(queries, list):
+            videos = []
+            for query in queries:
+                json_response = json.loads(self.open_url(self.apiv3_url + query))
+                if not (json_response is None) and 'data' in json_response:
+                    if 'data' in json_response['data']:
+                        for entry in json_response['data']['data']:
+                            videos.append(entry)
+                    else:
+                        for entry in json_response['data']:
+                            videos.append(entry)
+
+            videos.sort(key=lambda video: video['date'], reverse=True)
+            for video in videos:
+                self.build_entry(video)
+            return
+
+        if not (page is None) and len(page):
+            cursor = page
+        elif not (page_hash is None) and len(page_hash):
+            cursor = page_hash
+        else:
+            cursor = None
+
+        if cursor:
+            queries = queries + '?' if '?' not in queries else queries + '&'
+            queries = queries + 'next=' + cursor
+
+        json_response = json.loads(self.open_url(self.apiv3_url + queries))
+        if json_response is None or 'data' not in json_response:
+            self.log('No media found.')
+            return
+
+        if 'data' in json_response['data']:
+            for entry in json_response['data']['data']:
+                self.build_entry(entry)
+        if 'results' in json_response['data']:
+            for entry in json_response['data']['results']:
+                self.build_entry(entry)
+        else:
+            for entry in json_response['data']:
+                self.build_entry(entry)
+
+        if 'next' in json_response['data']:
+            cursor = json_response['data']['next']
+            self.log('next: ' + cursor)
+
+            if not (page is None):
+                url = self.build_url(mode=mode, name=name, page=cursor)
+            elif not (page_hash is None):
+                url = self.build_url(mode=mode, name=name, page_hash=cursor)
+            else:
+                return
+
+            self.log("Url " + url)
+
+            next_item = xbmcgui.ListItem(label='>> ' + LANGUAGE(30073))  # Next page 
+            next_item.setProperty('IsPlayable', 'false')                               
+            xbmcplugin.addDirectoryItem(self.handle, url, next_item, isFolder=True)                                    
+
     def build_folder_menu(self, folders):
         """
         Builds a menu from a list of folder dictionaries. Each dictionary
@@ -361,12 +437,20 @@ class SRGSSR(object):
         This works for the business units 'srf', 'rts', 'rsi' and 'rtr', but
         not for 'swi'.
         """
-        json_url = ('http://il.srgssr.ch/integrationlayer/1.0/ue/%s/tv/'
-                    'assetGroup/editorialPlayerAlphabetical.json') % self.bu
-        json_response = json.loads(self.open_url(json_url))
-        show_list = utils.try_get(
-            json_response,
-            ('AssetGroups', 'Show'), data_type=list, default=[])
+        show_list = None
+
+        if not (self.apiv3_url is None):
+            json_response = json.loads(self.open_url(self.apiv3_url + 'shows'))
+            if not json_response is None and 'data' in json_response:
+                show_list = json_response['data']
+        else:
+            json_url = ('http://il.srgssr.ch/integrationlayer/1.0/ue/%s/tv/'
+                        'assetGroup/editorialPlayerAlphabetical.json') % self.bu
+            json_response = json.loads(self.open_url(json_url))
+            show_list = utils.try_get(
+                json_response,
+                ('AssetGroups', 'Show'), data_type=list, default=[])
+                
         if not show_list:
             self.log('read_all_available_shows: No shows found.')
             return []
@@ -410,10 +494,13 @@ class SRGSSR(object):
                 }
             )
 
-            image_url = utils.try_get(
-                jse,
-                ('Image', 'ImageRepresentations',
-                 'ImageRepresentation', 0, 'url'))
+            if 'imageUrl' in jse:
+                image_url = jse['imageUrl']
+            else:
+                image_url = utils.try_get(
+                    jse,
+                    ('Image', 'ImageRepresentations',
+                    'ImageRepresentation', 0, 'url'))
             if image_url:
                 image_url = re.sub(r'/\d+x\d+', '', image_url)
                 thumbnail = image_url + '/scale/width/688'
@@ -451,14 +538,22 @@ class SRGSSR(object):
         show_id   -- the id of the show
         radio_tv  -- either 'radio' or 'tv'
         """
-        if radio_tv not in ('radio', 'tv'):
-            self.log(('build_show_folder: radio_tv must be '
-                      'either \'radio\' or \'tv\''))
-            return
-        query_url = '%s/play/%s/show/%s/latestEpisodes' % (
-            self.host_url, radio_tv, show_id)
-        result = json.loads(self.open_url(query_url, use_cache=True))
-        show_info = utils.try_get(result, 'show', data_type=dict, default={})
+        if not (self.apiv3_url is None):
+            query_url = self.apiv3_url + 'show-detail/' + show_id
+            result = json.loads(self.open_url(query_url, use_cache=True))
+            if not (result is None) and 'data' in result:
+                show_info = result['data']
+
+        else:
+            if radio_tv not in ('radio', 'tv'):
+                self.log(('build_show_folder: radio_tv must be '
+                        'either \'radio\' or \'tv\''))
+                return
+            query_url = '%s/play/%s/show/%s/latestEpisodes' % (
+                self.host_url, radio_tv, show_id)
+            result = json.loads(self.open_url(query_url, use_cache=True))
+            show_info = utils.try_get(result, 'show', data_type=dict, default={})
+
         if not show_info:
             self.log('build_show_folder: Unable to retrieve show info')
             return
@@ -499,6 +594,12 @@ class SRGSSR(object):
         self.log('build_newest_favourite_menu')
         number_of_days = 30
         show_ids = self.read_favourite_show_ids()
+
+        if not (self.apiv3_url is None):
+            queries = []
+            for sid in show_ids:
+                queries.append('videos-by-show-id?showId=' + sid)
+            return self.build_menu_apiv3(queries,12)
 
         # TODO: This depends on the local time settings
         now = datetime.datetime.now()
@@ -567,6 +668,12 @@ class SRGSSR(object):
         """
         self.log(('build_show_menu, show_id = %s, page_hash=%s, '
                   'audio=%s') % (show_id, page_hash, audio))
+
+        if not (self.apiv3_url is None):
+            cursor = page_hash if page_hash else ''
+            return self.build_menu_apiv3('videos-by-show-id?showId=' + show_id,
+                                         20, page_hash=cursor, name=show_id)
+
         # TODO: This depends on the local time settings
         current_month_date = datetime.date.today().strftime('%m-%Y')
         section = 'radio' if audio else 'tv'
@@ -643,8 +750,15 @@ class SRGSSR(object):
             self.log('build_topics_overview_menu: Unknown mode, \
                 must be "Newest" or "Most clicked".')
             return
-        topics_url = self.host_url + '/play/tv/topicList'
-        topics_json = json.loads(self.open_url(topics_url))
+
+        if not (self.apiv3_url is None):
+            topics_json = json.loads(self.open_url(self.apiv3_url + 'topics'))
+            if not (topics_json is None) and 'data' in topics_json:
+                topics_json = topics_json['data']
+        else:
+            topics_url = self.host_url + '/play/tv/topicList'
+            topics_json = json.loads(self.open_url(topics_url))
+
         if not isinstance(topics_json, list) or not topics_json:
             self.log('No topics found.')
             return
@@ -710,24 +824,34 @@ class SRGSSR(object):
             url = '%s/play/tv/topic/%s/latest?numberOfVideos=%s' % (
                 self.host_url, topic_id, number_of_videos)
             mode = 22
+            query = 'latest-media-by-topic?topicId=' + topic_id
         elif name == 'Most clicked':
             url = '%s/play/tv/topic/%s/mostClicked?numberOfVideos=%s' % (
                 self.host_url, topic_id, number_of_videos)
             mode = 23
+            query ='trending-media-by-topics?topicIds=' + topic_id
+            query = query + '&types=CLIP%2CSEGMENT&pageSize=50'
         elif name == 'Soon offline':
             url = '%s/play/tv/videos/soon-offline-videos?numberOfVideos=%s' % (
                 self.host_url, number_of_videos)
             mode = 15
+            query = 'expiring-soon'
         elif name == 'Trending':
             url = ('%s/play/tv/videos/trending?numberOfVideos=%s'
                    '&onlyEpisodes=true&includeEditorialPicks=true') % (
                        self.host_url, number_of_videos)
             mode = 16
+            query = ['trending-videos','editorial-picks']
             # editor_picks = self.extract_id_list(url, editor_picks=True)
             # self.log('build_topics_menu: editor_picks = %s' % editor_picks)
         else:
             self.log('build_topics_menu: Unknown mode.')
             return
+
+        if not (self.apiv3_url is None):
+            cursor = page if page else ''
+            name = topic_id if topic_id else ''
+            return self.build_menu_apiv3(query, mode, page=cursor, name=name)
 
         id_list = self.extract_id_list(url)
         try:
@@ -1020,6 +1144,12 @@ class SRGSSR(object):
         """
         self.log('build_date_menu, date_string = %s' % date_string)
 
+        if not (self.apiv3_url is None):
+            # API v3 use the date in sortable format, i.e. year first
+            elems = date_string.split('-')
+            query = 'videos-by-date/%s-%s-%s' % (elems[2], elems[1], elems[0])
+            return self.build_menu_apiv3(query, 0)
+
         url = self.host_url + '/play/tv/programDay/%s' % date_string
         id_list = self.extract_id_list(url)
 
@@ -1146,6 +1276,8 @@ class SRGSSR(object):
                 query_string = quote_plus(query_string)
                 query_url = url_layout % (
                     name, self.number_of_episodes, media_type)
+
+            query = 'search/media?searchTerm=' + query_string
         else:
             dialog = xbmcgui.Dialog()
             query_string = dialog.input(LANGUAGE(30115))
@@ -1159,6 +1291,14 @@ class SRGSSR(object):
             query_string = quote_plus(query_string)
             query_url = url_layout % (
                 query_string, self.number_of_episodes, media_type)
+            query = 'search/media?searchTerm=' + query_string
+
+        if not (self.apiv3_url is None):
+            query = query + '&mediaType=' + media_type + '&includeAggregations=false'
+            cursor = page_hash if page_hash else ''
+            return self.build_menu_apiv3(query, mode, page_hash=cursor,
+                                         name=query_string)
+
         result = json.loads(self.open_url(query_url, use_cache=False))
         media_ids = [
             m['id'] for m in utils.try_get(
@@ -1210,6 +1350,19 @@ class SRGSSR(object):
             if True:
                 self.write_search(RECENT_SHOW_SEARCHES_FILENAME, query_string)
         query_string = quote_plus(query_string)
+
+        radio_tv = 'radio' if audio else 'tv'
+
+        if not (self.apiv3_url is None):
+            url = self.apiv3_url + 'search/shows?searchTerm=' + query_string
+            result = json.loads(self.open_url(url, use_cache=False))
+            indicator = ':radio:' if audio else ':tv:'
+            if not (result is None) and 'data' in result and 'results' in result['data']:
+                for show in result['data']['results']:
+                    if 'urn' in show and indicator in show['urn']:
+                        self.build_show_folder(show['id'], radio_tv)
+            return
+
         query_url = url_layout % query_string
         result = json.loads(self.open_url(query_url, use_cache=False))
         indicator = ':radio:' if audio else ':tv:'
@@ -1217,7 +1370,6 @@ class SRGSSR(object):
             result, 'shows', data_type=list, default=[]) if (
                 utils.try_get(m, 'id') and
                 indicator in utils.try_get(m, 'urn'))]
-        radio_tv = 'radio' if audio else 'tv'
         for show_id in show_ids:
             self.build_show_folder(show_id, radio_tv)
 
