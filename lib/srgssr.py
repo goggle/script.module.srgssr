@@ -401,12 +401,9 @@ class SRGSSR(object):
             self.log('No media found.')
             return
 
-        if 'data' in json_response['data']:
-            videos = json_response['data']['data']
-        elif 'results' in json_response['data']:
-            videos = json_response['data']['results']
-        else:
-            videos = json_response['data']
+        videos = json_response['data']
+        if   'data'    in videos: videos = videos['data']
+        elif 'results' in videos: videos = videos['results']
 
         for video in videos:
             if include_segments or segment_option:
@@ -1609,18 +1606,19 @@ class SRGSSR(object):
 
             play_item = xbmcgui.ListItem(title, path=self.get_auth_url(url))
 
-            if KODI_VERSION < 19:
-                play_item.setProperty('inputstreamaddon', 'inputstream.adaptive')
-            else:                           
-                play_item.setProperty('inputstream', 'inputstream.adaptive')
+            inp = 'inputstream' if KODI_VERSION >= 19 else 'inputstreamaddon'
+            ia  = 'inputstream.adaptive'
+            play_item.setProperty(inp, ia)
 
-            play_item.setProperty('inputstream.adaptive.manifest_type', mf_type)
+            play_item.setProperty(ia + '.manifest_type', mf_type)
             if lic_url:
-                play_item.setProperty('inputstream.adaptive.license_type', lic_type)
-                play_item.setProperty('inputstream.adaptive.license_key', lic_url +
-                                      '|Content-Type=application/octet-stream|R{SSM}|')
-                play_item.setProperty('inputstream.adaptive.license_flags', "persistent_storage")
-                play_item.setProperty('inputstream.adaptive.manifest_update_parameter', 'full')
+                header  = 'Content-Type=application/octet-stream'
+                lic_key = lic_url + '|' + header + '|R{SSM}|'
+                play_item.setProperty(ia + '.license_type', lic_type)
+                play_item.setProperty(ia + '.license_key',  lic_key)
+                play_item.setProperty(ia + '.license_flags',
+                              'persistent_storage')
+                play_item.setProperty(ia + '.manifest_update_parameter', 'full')
 
             if self.subtitles:
                 subs = self.get_subtitles(url, urn)
