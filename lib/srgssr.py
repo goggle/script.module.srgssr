@@ -367,7 +367,7 @@ class SRGSSR(object):
             videos = []
             for query in queries:
                 json_response = json.loads(self.open_url(self.apiv3_url + query))
-                if not (json_response is None) and 'data' in json_response:
+                if json_response and 'data' in json_response:
                     if 'data' in json_response['data']:
                         for entry in json_response['data']['data']:
                             videos.append(entry)
@@ -561,7 +561,7 @@ class SRGSSR(object):
         if self.apiv3_url:
             query_url = self.apiv3_url + 'show-detail/' + show_id
             result = json.loads(self.open_url(query_url, use_cache=True))
-            if not (result is None) and 'data' in result:
+            if result and 'data' in result:
                 show_info = result['data']
 
         else:
@@ -774,7 +774,7 @@ class SRGSSR(object):
 
         if self.apiv3_url:
             topics_json = json.loads(self.open_url(self.apiv3_url + 'topics'))
-            if not (topics_json is None) and 'data' in topics_json:
+            if topics_json and 'data' in topics_json:
                 topics_json = topics_json['data']
         else:
             topics_url = self.host_url + '/play/tv/topicList'
@@ -1396,7 +1396,7 @@ class SRGSSR(object):
             url = self.apiv3_url + 'search/shows?searchTerm=' + query_string
             result = json.loads(self.open_url(url, use_cache=False))
             indicator = ':radio:' if audio else ':tv:'
-            if not (result is None) and 'data' in result and 'results' in result['data']:
+            if result and 'data' in result and 'results' in result['data']:
                 for show in result['data']['results']:
                     if 'urn' in show and indicator in show['urn']:
                         self.build_show_folder(show['id'], radio_tv)
@@ -1822,7 +1822,7 @@ class SRGSSR(object):
 
         if self.apiv3_url:
             streams = json.loads(self.open_url(self.apiv3_url + 'tv-livestreams'))
-            if not (streams is None) and 'data' in streams:
+            if streams and 'data' in streams:
                 for stream in streams['data']:
                     if 'livestreamUrn' in stream:
                         urn = stream['livestreamUrn']
@@ -2237,13 +2237,10 @@ class SRGSSR(object):
                 'poster': show['imageUrl'],
                 'banner': show['bannerImageUrl'],
             })
-            list_item.setInfo(
-                'video',
-                {
-                    'title': show['title'],
-                    'plot': show['lead'] or show['description'],
-                }
-            )
+            list_item.setInfo('video', {
+                'title': show['title'],
+                'plot': show['lead'] or show['description'],
+            })
             surl = self.build_url(mode=20, name=show['id'])
             xbmcplugin.addDirectoryItem(
                 self.handle, surl, list_item, isFolder=True)
