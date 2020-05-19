@@ -367,7 +367,7 @@ class SRGSSR(object):
             videos = []
             for query in queries:
                 json_response = json.loads(self.open_url(self.apiv3_url + query))
-                if not (json_response is None) and 'data' in json_response:
+                if json_response and 'data' in json_response:
                     if 'data' in json_response['data']:
                         for entry in json_response['data']['data']:
                             videos.append(entry)
@@ -393,8 +393,7 @@ class SRGSSR(object):
             cursor = None
 
         if cursor:
-            queries = queries + '?' if '?' not in queries else queries + '&'
-            queries = queries + 'next=' + cursor
+            queries += ('&' if '?' in queries else '?') + 'next=' + cursor
 
         json_response = json.loads(self.open_url(self.apiv3_url + queries))
         if json_response is None or 'data' not in json_response:
@@ -561,7 +560,7 @@ class SRGSSR(object):
         if self.apiv3_url:
             query_url = self.apiv3_url + 'show-detail/' + show_id
             result = json.loads(self.open_url(query_url, use_cache=True))
-            if not (result is None) and 'data' in result:
+            if result and 'data' in result:
                 show_info = result['data']
 
         else:
@@ -774,7 +773,7 @@ class SRGSSR(object):
 
         if self.apiv3_url:
             topics_json = json.loads(self.open_url(self.apiv3_url + 'topics'))
-            if not (topics_json is None) and 'data' in topics_json:
+            if topics_json and 'data' in topics_json:
                 topics_json = topics_json['data']
         else:
             topics_url = self.host_url + '/play/tv/topicList'
@@ -1396,7 +1395,7 @@ class SRGSSR(object):
             url = self.apiv3_url + 'search/shows?searchTerm=' + query_string
             result = json.loads(self.open_url(url, use_cache=False))
             indicator = ':radio:' if audio else ':tv:'
-            if not (result is None) and 'data' in result and 'results' in result['data']:
+            if result and 'data' in result and 'results' in result['data']:
                 for show in result['data']['results']:
                     if 'urn' in show and indicator in show['urn']:
                         self.build_show_folder(show['id'], radio_tv)
@@ -1435,126 +1434,67 @@ class SRGSSR(object):
             url += ('?' if '?' not in url else '&') + auth_params
         return url
 
+        # TODO: adapt
+        # stream_url = stream_urls['HD'] if (
+            # stream_urls['HD'] and self.prefer_hd)\
+            # or not stream_urls['SD'] else stream_urls['SD']
+        # self.log('play_video, stream_url = %s' % stream_url)
+
+        # auth_url = self.get_auth_url(stream_url)
+
+        # start_time = end_time = None
+        # if utils.try_get(json_response, 'segmentUrn'):
+            # segment_list = utils.try_get(
+                # chapter, 'segmentList', data_type=list, default=[])
+            # for segment in segment_list:
+                # if utils.try_get(segment, 'id') == video_id:
+                    # start_time = utils.try_get(
+                        # segment, 'markIn', data_type=int, default=None)
+                    # if start_time:
+                        # start_time = start_time // 1000
+                    # end_time = utils.try_get(
+                        # segment, 'markOut', data_type=int, default=None)
+                    # if end_time:
+                        # end_time = end_time // 1000
+                    # break
+
+            # if start_time and end_time:
+                # parsed_url = urlps(auth_url)
+                # query_list = parse_qsl(parsed_url.query)
+                # updated_query_list = []
+                # for query in query_list:
+                    # if query[0] == 'start' or query[0] == 'end':
+                        # continue
+                    # updated_query_list.append(query)
+                # updated_query_list.append(
+                    # ('start', utils.CompatStr(start_time)))
+                # updated_query_list.append(
+                    # ('end', utils.CompatStr(end_time)))
+                # new_query = utils.assemble_query_string(updated_query_list)
+                # surl_result = ParseResult(
+                    # parsed_url.scheme, parsed_url.netloc,
+                    # parsed_url.path, parsed_url.params,
+                    # new_query, parsed_url.fragment)
+                # auth_url = surl_result.geturl()
+        # self.log('play_video, auth_url = %s' % auth_url)
+        # play_item = xbmcgui.ListItem(video_id, path=auth_url)
+        # xbmcplugin.setResolvedUrl(self.handle, True, play_item)
+
     def play_video(self, video_id, audio=False):
         """
-        Gets the video stream information of a video and starts to play it.
+        Gets the stream information starts to play it.
 
         Keyword arguments:
-        video_id -- the video of the video to play
+        video_id -- the urn or id of the video to play
         audio    -- boolean value to indicate if the content is
                     audio (default: False)
         """
-        self.log('play_video, video_id = %s, audio=%s' % (video_id, audio))
-        if video_id.startswith('urn:'):
-            return self.play_video_from_urn(video_id)
+        if video_id.startswith('urn:'): urn = video_id
+        else:
+            media_type = 'audio' if audio else 'video'
+            urn = 'urn:' + self.bu + ':' + media_type + ':' + video_id
 
-        content_type = 'audio' if audio else 'video'
-        json_url = ('https://il.srgssr.ch/integrationlayer/2.0/%s/'
-                    'mediaComposition/%s/%s.json') % (self.bu, content_type,
-                                                      video_id)
-        self.log('play_video. Open URL %s' % json_url)
-        json_response = json.loads(self.open_url(json_url))
-
-        chapter_list = utils.try_get(
-            json_response, 'chapterList', data_type=list, default=[])
-        if not chapter_list:
-            self.log('play_video: no stream URL found (chapterList empty).')
-            return
-
-        first_chapter = utils.try_get(
-            chapter_list, 0, data_type=dict, default={})
-        chapter = next(
-            (e for e in chapter_list if e.get('id') == video_id),
-            first_chapter)
-        resource_list = utils.try_get(
-            chapter, 'resourceList', data_type=list, default=[])
-        if not resource_list:
-            self.log('play_video: no stream URL found. (resourceList empty)')
-            return
-
-        stream_urls = {
-            'SD': '',
-            'HD': '',
-        }
-
-        if audio:
-            candidates = [res for res in resource_list if utils.try_get(
-                res, 'protocol') in ('HTTP', 'HTTPS', 'HTTP-MP3-STREAM')]
-            for candi in candidates:
-                if utils.try_get(candi, 'quality') in ('HD', 'HQ'):
-                    stream_url = candi['url']
-                    break
-            else:
-                stream_url = candidates[0]['url']
-
-            play_item = xbmcgui.ListItem(video_id, path=stream_url)
-            xbmcplugin.setResolvedUrl(self.handle, True, play_item)
-            return
-
-        for resource in resource_list:
-            if utils.try_get(resource, 'protocol') == 'HLS':
-                for key in ('SD', 'HD'):
-                    if utils.try_get(resource, 'quality') == key:
-                        stream_urls[key] = utils.try_get(resource, 'url')
-
-        if not stream_urls['SD'] and not stream_urls['HD']:
-            self.log('play_video: no stream URL found.')
-            return
-
-        stream_url = stream_urls['HD'] if (
-            stream_urls['HD'] and self.prefer_hd)\
-            or not stream_urls['SD'] else stream_urls['SD']
-        self.log('play_video, stream_url = %s' % stream_url)
-
-        auth_url = self.get_auth_url(stream_url)
-
-        start_time = end_time = None
-        if utils.try_get(json_response, 'segmentUrn'):
-            segment_list = utils.try_get(
-                chapter, 'segmentList', data_type=list, default=[])
-            for segment in segment_list:
-                if utils.try_get(segment, 'id') == video_id:
-                    start_time = utils.try_get(
-                        segment, 'markIn', data_type=int, default=None)
-                    if start_time:
-                        start_time = start_time // 1000
-                    end_time = utils.try_get(
-                        segment, 'markOut', data_type=int, default=None)
-                    if end_time:
-                        end_time = end_time // 1000
-                    break
-
-            if start_time and end_time:
-                parsed_url = urlps(auth_url)
-                query_list = parse_qsl(parsed_url.query)
-                updated_query_list = []
-                for query in query_list:
-                    if query[0] == 'start' or query[0] == 'end':
-                        continue
-                    updated_query_list.append(query)
-                updated_query_list.append(
-                    ('start', utils.CompatStr(start_time)))
-                updated_query_list.append(
-                    ('end', utils.CompatStr(end_time)))
-                new_query = utils.assemble_query_string(updated_query_list)
-                surl_result = ParseResult(
-                    parsed_url.scheme, parsed_url.netloc,
-                    parsed_url.path, parsed_url.params,
-                    new_query, parsed_url.fragment)
-                auth_url = surl_result.geturl()
-        self.log('play_video, auth_url = %s' % auth_url)
-        play_item = xbmcgui.ListItem(video_id, path=auth_url)
-        xbmcplugin.setResolvedUrl(self.handle, True, play_item)
-
-    def play_video_from_urn(self, urn):
-        """
-        Creates a video entry
-
-        Keyword arguments:
-        urn          -- urn of the video
-        info_section -- section for extrcacting details
-        """
-        self.log('video_entry, urn = ' + urn)
+        self.log('play_video, urn = ' + urn)
         detail_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
                       'mediaComposition/byUrn/' + urn)
         json_response = json.loads(self.open_url(detail_url))
@@ -1574,14 +1514,28 @@ class SRGSSR(object):
         for chapter in details['chapterList']:
             if not 'resourceList' in chapter: continue
 
+            audio = False
+            if 'mediaType' in chapter:
+                if chapter['mediaType'].upper() == 'AUDIO': audio = True
+
             for resource in chapter['resourceList']:
                 if not 'protocol' in resource: continue
+                protocol = resource['protocol'].upper()
+
+                if audio:
+                    if protocol not in ('HTTP', 'HTTPS', 'HTTP-MP3-STREAM'):
+                        continue
+                        
+                    url = self.get_auth_url(resource['url'])
+                    xbmcplugin.setResolvedUrl(self.handle, True, 
+                                        xbmcgui.ListItem(title, path=url))
+                    return
+
                 res_quality = resource['quality'] if 'quality' in resource else 'SD'
                 if url:
                     if self.prefer_hd and res_quality == 'SD': continue
                     elif not self.prefer_hd and res_quality == 'HD': continue
 
-                protocol = resource['protocol']
                 if protocol == 'DASH':  res_mf_type  = 'mpd'
                 elif protocol == 'HLS': res_mf_type  = 'hls'
                 else: continue
@@ -1628,6 +1582,15 @@ class SRGSSR(object):
             xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
     def get_subtitles(self, url, name):
+        """
+        Returns subtitles from an url
+        Kodi does not accept m3u playlists for subtitles
+        In this case a temporary with all chunks is built
+
+        Keyword arguments:
+        url      -- url with subtitle location
+        name     -- name of temporary file if required
+        """
         webvttbaseurl = None
         caption = None
 
@@ -1646,17 +1609,27 @@ class SRGSSR(object):
         self.log('subtitle url: ' + sub_url)
         if not sub_url.endswith('.m3u8'): return [sub_url]
 
-        # Unfortunately Kodi does not play subtitles from m3u playlists
-        # so a temporary local file is required
+        # Build temporary local file in case of m3u playlist
         sub_name = 'special://temp/' + name + lang + '.vtt'
         if not xbmcvfs.exists(sub_name):
             m3u_base = sub_url.rsplit('/', 1)[0]
             m3u = self.open_url(sub_url, use_cache=False)
             sub_file = xbmcvfs.File(sub_name, 'w')
+            
+            # Concatenate chunks and remove header on subsequent
+            first = True
             for line in m3u.splitlines():
-                if not line.startswith('#'):
-                    sub_file.write(self.open_url(m3u_base + '/' + line,
-                                                 use_cache=False))
+                if line.startswith('#'): continue
+                subs = self.open_url(m3u_base + '/' + line, use_cache=False)
+                if first:
+                    sub_file.write(subs)
+                    first = False
+                else:
+                    i = 0
+                    while i < len(subs) and not subs[i].isnumeric(): i += 1
+                    sub_file.write('\n')
+                    sub_file.write(subs[i:])
+
             sub_file.close()
 
         return [sub_name]
@@ -1820,19 +1793,34 @@ class SRGSSR(object):
                 pass
             return live_ids
 
+        def add_stream_by_urn(urn):
+            detail_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
+                          'mediaComposition/byUrn/' + urn)
+            json_response = json.loads(self.open_url(detail_url))
+            details = json.loads(self.open_url(detail_url))
+            if 'channel' in details:
+                self.build_entry(details['channel'],
+                                 fanart=self.fanart, urn=urn)
+
         if self.apiv3_url:
-            streams = json.loads(self.open_url(self.apiv3_url + 'tv-livestreams'))
-            if not (streams is None) and 'data' in streams:
-                for stream in streams['data']:
-                    if 'livestreamUrn' in stream:
-                        urn = stream['livestreamUrn']
-                        detail_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
-                                      'mediaComposition/byUrn/' + urn)
-                        json_response = json.loads(self.open_url(detail_url))
-                        details = json.loads(self.open_url(detail_url))
-                        if 'channel' in details:
-                            self.build_entry(details['channel'],
-                                             fanart=self.fanart, urn=urn)
+            # TV Channels
+            tv = json.loads(self.open_url(self.apiv3_url + 'tv-livestreams'))
+            if tv and 'data' in tv:
+                for channel in tv['data']:
+                    if 'livestreamUrn' in channel:
+                        add_stream_by_urn(channel['livestreamUrn'])
+            
+            # Radio channles
+            radio = json.loads(self.open_url(self.apiv3_url + 'radio/channels'))
+            if radio and 'data' in radio and 'channels' in radio['data']:
+                for channel in radio['data']['channels']:
+                    self.log('channel ' + channel['title'])
+                    if 'livestreams' in channel:
+                        for stream in channel['livestreams']:
+                            if 'livestreamUrn' in stream:
+                                add_stream_by_urn(stream['livestreamUrn'])
+                                break
+
             return
 
         live_ids = get_live_ids()
@@ -2237,13 +2225,10 @@ class SRGSSR(object):
                 'poster': show['imageUrl'],
                 'banner': show['bannerImageUrl'],
             })
-            list_item.setInfo(
-                'video',
-                {
-                    'title': show['title'],
-                    'plot': show['lead'] or show['description'],
-                }
-            )
+            list_item.setInfo('video', {
+                'title': show['title'],
+                'plot': show['lead'] or show['description'],
+            })
             surl = self.build_url(mode=20, name=show['id'])
             xbmcplugin.addDirectoryItem(
                 self.handle, surl, list_item, isFolder=True)
