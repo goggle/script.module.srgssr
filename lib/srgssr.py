@@ -28,16 +28,16 @@ import datetime
 import json
 import requests
 
-try:  # Python 3
-    from urllib.parse import quote_plus, parse_qsl, ParseResult
-    from urllib.parse import urlparse as urlps
-except ImportError:  # Python 2
-    from urllib import quote_plus
-    from urlparse import parse_qsl, ParseResult
-    from urlparse import urlparse as urlps
+from urllib.parse import quote_plus, parse_qsl, ParseResult
+from urllib.parse import urlparse as urlps
 
-from kodi_six import xbmc, xbmcgui, xbmcplugin, xbmcaddon, xbmcvfs
-from simplecache import SimpleCache
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+import xbmcvfs
+
+import simplecache
 import utils
 import youtube_channels
 
@@ -78,7 +78,7 @@ class SRGSSR(object):
     """
     def __init__(self, plugin_handle, bu='srf', addon_id=ADDON_ID):
         self.handle = plugin_handle
-        self.cache = SimpleCache()
+        self.cache = simplecache.SimpleCache()
         self.real_settings = xbmcaddon.Addon(id=addon_id)
         self.bu = bu
         self.addon_id = addon_id
@@ -1307,8 +1307,6 @@ class SRGSSR(object):
             else:
                 # `name` is provided by previously performed search, so it
                 # needs to be processed first
-                if utils.is_python_2():
-                    query_string = query_string.encode('utf8')
                 query_string = quote_plus(query_string)
                 query_url = url_layout % (
                     name, self.number_of_episodes, media_type)
@@ -1319,8 +1317,6 @@ class SRGSSR(object):
             if not query_string:
                 self.log('build_search_media_menu: No input provided')
                 return
-            if utils.is_python_2():
-                query_string = query_string.encode('utf8')
             if True:
                 self.write_search(RECENT_MEDIA_SEARCHES_FILENAME, query_string)
             query_string = quote_plus(query_string)
@@ -1372,16 +1368,12 @@ class SRGSSR(object):
         url_layout = self.host_url + '/play/search/shows?searchQuery=%s'
         if name:
             query_string = name
-            if utils.is_python_2():
-                query_string = query_string.encode('utf8')
         else:
             dialog = xbmcgui.Dialog()
             query_string = dialog.input(LANGUAGE(30115))
             if not query_string:
                 self.log('build_search_show_menu: No input provided')
                 return
-            if utils.is_python_2():
-                query_string = query_string.encode('utf8')
             if True:
                 self.write_search(RECENT_SHOW_SEARCHES_FILENAME, query_string)
         query_string = quote_plus(query_string)
