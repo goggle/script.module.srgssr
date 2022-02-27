@@ -23,13 +23,7 @@ import datetime
 import re
 import sys
 
-try:
-    CompatStr = unicode  # Python2
-except NameError:
-    CompatStr = str  # Python3
-
-
-def try_get(dictionary, keys, data_type=CompatStr, default=''):
+def try_get(dictionary, keys, data_type=str, default=''):
     """
     Accesses a nested dictionary in a save way.
 
@@ -39,7 +33,7 @@ def try_get(dictionary, keys, data_type=CompatStr, default=''):
                     accessed, or a string/int if only one key should be
                     accessed
     data_type    -- the expected data type of the final element
-                    (default: CompatStr)
+                    (default: str)
     default      -- a default value to return (default: '')
     """
     d = dictionary
@@ -82,7 +76,7 @@ def str_or_none(inp, default=None):
     if inp is None:
         return default
     try:
-        return CompatStr(inp, 'utf-8')
+        return str(inp, 'utf-8')
     except TypeError:
         return inp
 
@@ -102,7 +96,7 @@ def get_duration(duration_string):
     Keyword arguments:
     duration_string -- a string of the above Form.
     """
-    if not isinstance(duration_string, CompatStr):
+    if not isinstance(duration_string, str):
         return None
     durrex = r'(((?P<hour>\d+):)?(?P<minute>\d+):)?(?P<second>\d+)'
     match = re.match(durrex, duration_string)
@@ -373,11 +367,3 @@ def generate_unique_list(input, unique_key):
                 unique_keys.append(elem[unique_key])
                 output.append(elem)
     return output
-
-
-def is_python_2():
-    """
-    Returns true if the major version number of the systems Python
-    is less than 2, otherwise false.
-    """
-    return sys.version_info[0] < 3
