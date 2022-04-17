@@ -486,8 +486,7 @@ class SRGSSR(object):
             title = utils.try_get(jse, 'title')
             show_id = utils.try_get(jse, 'id')
             if not (title and show_id):
-                self.log(
-                    'build_all_shows_menu: Skipping, no title or id found.')
+                self.log('build_all_shows_menu: No title or id found, skipping show')
                 continue
 
             # Skip if we build the 'favourite show menu' and the current
@@ -502,33 +501,46 @@ class SRGSSR(object):
                 {
                     'title': title,
                     'plot': utils.try_get(
-                        jse, 'lead') or utils.try_get(jse, 'description'),
+                        jse, 'description') or utils.try_get(jse, 'lead'),
                 }
             )
 
-            try: image_url = jse['imageUrl']
-            except:
-                image_url = utils.try_get(
-                    jse,
-                    ('Image', 'ImageRepresentations',
-                    'ImageRepresentation', 0, 'url'))
-            if image_url:
-                image_url = re.sub(r'/\d+x\d+', '', image_url)
-                thumbnail = image_url + '/scale/width/688'
-                banner = image_url.replace(
-                    'WEBVISUAL',
-                    'HEADER_SRF_PLAYER')
-            else:
-                image_url = self.fanart
-                thumbnail = self.icon
-                banner = None
+            # try: image_url = jse['imageUrl']
+            # except:
+            #     image_url = utils.try_get(
+            #         jse,
+            #         ('Image', 'ImageRepresentations',
+            #         'ImageRepresentation', 0, 'url'))
+            # if image_url:
+            #     image_url = re.sub(r'/\d+x\d+', '', image_url)
+            #     thumbnail = image_url + '/scale/width/688'
+            #     banner = image_url.replace(
+            #         'WEBVISUAL',
+            #         'HEADER_SRF_PLAYER')
+            # else:
+            #     image_url = self.fanart
+            #     thumbnail = self.icon
+            #     banner = None
 
+            # list_item.setArt({
+            #     'thumb': thumbnail,
+            #     'poster': image_url,
+            #     'fanart': image_url,
+            #     'banner': banner,
+            # })
+            image_url = utils.try_get(jse, 'imageUrl')
+            poster_url = utils.try_get(jse, 'posterImageUrl')
+            if not image_url:
+                image_url = self.fanart
+            if not poster_url:
+                poster_url = self.fanart
             list_item.setArt({
-                'thumb': thumbnail,
-                'poster': image_url,
+                'thumb': image_url,
+                'poster': poster_url,
                 'fanart': image_url,
-                'banner': banner,
+                'banner': image_url,
             })
+
             url = self.build_url(mode=20, name=show_id)
             list_items.append((url, list_item, True))
         xbmcplugin.addDirectoryItems(
@@ -744,60 +756,60 @@ class SRGSSR(object):
             xbmcplugin.addDirectoryItem(
                 self.handle, url, next_item, isFolder=True)
 
-    def build_topics_overview_menu(self, newest_or_most_clicked):
-        """
-        Builds a list of folders, where each folders represents a
-        topic (e.g. News).
+    # def build_topics_overview_menu(self, newest_or_most_clicked):
+    #     """
+    #     Builds a list of folders, where each folders represents a
+    #     topic (e.g. News).
 
-        Keyword arguments:
-        newest_or_most_clicked -- a string (either 'Newest' or 'Most clicked')
-        """
-        self.log('build_topics_overview_menu, newest_or_most_clicked = %s' %
-                 newest_or_most_clicked)
-        if newest_or_most_clicked == 'Newest':
-            mode = 22
-        elif newest_or_most_clicked == 'Most clicked':
-            mode = 23
-        else:
-            self.log('build_topics_overview_menu: Unknown mode, \
-                must be "Newest" or "Most clicked".')
-            return
+    #     Keyword arguments:
+    #     newest_or_most_clicked -- a string (either 'Newest' or 'Most clicked')
+    #     """
+    #     self.log('build_topics_overview_menu, newest_or_most_clicked = %s' %
+    #              newest_or_most_clicked)
+    #     if newest_or_most_clicked == 'Newest':
+    #         mode = 22
+    #     elif newest_or_most_clicked == 'Most clicked':
+    #         mode = 23
+    #     else:
+    #         self.log('build_topics_overview_menu: Unknown mode, \
+    #             must be "Newest" or "Most clicked".')
+    #         return
 
-        if self.apiv3_url:
-            topics_json = json.loads(self.open_url(self.apiv3_url + 'topics'))
-            try:    topics_json = topics_json['data']
-            except: pass
-        else:
-            topics_url = self.host_url + '/play/tv/topicList'
-            topics_json = json.loads(self.open_url(topics_url))
+    #     if self.apiv3_url:
+    #         topics_json = json.loads(self.open_url(self.apiv3_url + 'topics'))
+    #         try:    topics_json = topics_json['data']
+    #         except: pass
+    #     else:
+    #         topics_url = self.host_url + '/play/tv/topicList'
+    #         topics_json = json.loads(self.open_url(topics_url))
 
-        if not isinstance(topics_json, list) or not topics_json:
-            self.log('No topics found.')
-            return
-        for elem in topics_json:
-            try:
-                image = re.sub(r'/\d+x\d+', '', elem['imageUrl'])
-                thumbnail = image + '/scale/width/688'
-                banner = image.replace('WEBVISUAL', 'HEADER_SRF_PLAYER')
-            except:
-                image = self.fanart
-                thumbnail = self.icon
-                banner = image
+    #     if not isinstance(topics_json, list) or not topics_json:
+    #         self.log('No topics found.')
+    #         return
+    #     for elem in topics_json:
+    #         try:
+    #             image = re.sub(r'/\d+x\d+', '', elem['imageUrl'])
+    #             thumbnail = image + '/scale/width/688'
+    #             banner = image.replace('WEBVISUAL', 'HEADER_SRF_PLAYER')
+    #         except:
+    #             image = self.fanart
+    #             thumbnail = self.icon
+    #             banner = image
 
-            list_item = xbmcgui.ListItem(label=elem.get('title'))
-            list_item.setProperty('IsPlayable', 'false')
-            list_item.setArt({
-                'thumb':  thumbnail,
-                'poster': image,
-                'banner': banner,
-                'fanart': image
-            })
-            name = utils.try_get(elem, 'id')
-            if name:
-                purl = self.build_url(mode=mode, name=name)
-                xbmcplugin.addDirectoryItem(
-                    handle=self.handle, url=purl,
-                    listitem=list_item, isFolder=True)
+    #         list_item = xbmcgui.ListItem(label=elem.get('title'))
+    #         list_item.setProperty('IsPlayable', 'false')
+    #         list_item.setArt({
+    #             'thumb':  thumbnail,
+    #             'poster': image,
+    #             'banner': banner,
+    #             'fanart': image
+    #         })
+    #         name = utils.try_get(elem, 'id')
+    #         if name:
+    #             purl = self.build_url(mode=mode, name=name)
+    #             xbmcplugin.addDirectoryItem(
+    #                 handle=self.handle, url=purl,
+    #                 listitem=list_item, isFolder=True)
 
     def extract_id_list(self, url, editor_picks=False):
         """
@@ -831,80 +843,80 @@ class SRGSSR(object):
             id_regex, readable_string_response)]
         return id_list
 
-    def build_topics_menu(self, name, topic_id=None, page=1):
-        """
-        Builds a list of videos (can also be folders) for a given topic.
+    # def build_topics_menu(self, name, topic_id=None, page=1):
+    #     """
+    #     Builds a list of videos (can also be folders) for a given topic.
 
-        Keyword arguments:
-        name     -- the type of the list, can be 'Newest', 'Most clicked',
-                    'Soon offline' or 'Trending'.
-        topic_id -- the SRF topic id for the given topic, this is only needed
-                    for the types 'Newest' and 'Most clicked' (default: None)
-        page     -- an integer representing the current page in the list
-        """
-        self.log('build_topics_menu, name = %s, topic_id = %s, page = %s' %
-                 (name, topic_id, page))
-        number_of_videos = 50
-        # editor_picks = []
-        if name == 'Newest':
-            url = '%s/play/tv/topic/%s/latest?numberOfVideos=%s' % (
-                self.host_url, topic_id, number_of_videos)
-            query = 'latest-media-by-topic?topicId=' + topic_id
-            mode = 22
-        elif name == 'Most clicked':
-            url = '%s/play/tv/topic/%s/mostClicked?numberOfVideos=%s' % (
-                self.host_url, topic_id, number_of_videos)
-            query = ('trending-media-by-topics?topicIds=' + topic_id
-                     + '&types=CLIP%2CSEGMENT&pageSize=50')
-            mode = 23
-        elif name == 'Soon offline':
-            url = '%s/play/tv/videos/soon-offline-videos?numberOfVideos=%s' % (
-                self.host_url, number_of_videos)
-            query = 'expiring-soon'
-            mode = 15
-        elif name == 'Trending':
-            url = ('%s/play/tv/videos/trending?numberOfVideos=%s'
-                   '&onlyEpisodes=true&includeEditorialPicks=true') % (
-                       self.host_url, number_of_videos)
-            query = ['trending-videos','editorial-picks']
-            mode = 16
-            # editor_picks = self.extract_id_list(url, editor_picks=True)
-            # self.log('build_topics_menu: editor_picks = %s' % editor_picks)
-        else:
-            self.log('build_topics_menu: Unknown mode.')
-            return
+    #     Keyword arguments:
+    #     name     -- the type of the list, can be 'Newest', 'Most clicked',
+    #                 'Soon offline' or 'Trending'.
+    #     topic_id -- the SRF topic id for the given topic, this is only needed
+    #                 for the types 'Newest' and 'Most clicked' (default: None)
+    #     page     -- an integer representing the current page in the list
+    #     """
+    #     self.log('build_topics_menu, name = %s, topic_id = %s, page = %s' %
+    #              (name, topic_id, page))
+    #     number_of_videos = 50
+    #     # editor_picks = []
+    #     if name == 'Newest':
+    #         url = '%s/play/tv/topic/%s/latest?numberOfVideos=%s' % (
+    #             self.host_url, topic_id, number_of_videos)
+    #         query = 'latest-media-by-topic?topicId=' + topic_id
+    #         mode = 22
+    #     elif name == 'Most clicked':
+    #         url = '%s/play/tv/topic/%s/mostClicked?numberOfVideos=%s' % (
+    #             self.host_url, topic_id, number_of_videos)
+    #         query = ('trending-media-by-topics?topicIds=' + topic_id
+    #                  + '&types=CLIP%2CSEGMENT&pageSize=50')
+    #         mode = 23
+    #     elif name == 'Soon offline':
+    #         url = '%s/play/tv/videos/soon-offline-videos?numberOfVideos=%s' % (
+    #             self.host_url, number_of_videos)
+    #         query = 'expiring-soon'
+    #         mode = 15
+    #     elif name == 'Trending':
+    #         url = ('%s/play/tv/videos/trending?numberOfVideos=%s'
+    #                '&onlyEpisodes=true&includeEditorialPicks=true') % (
+    #                    self.host_url, number_of_videos)
+    #         query = ['trending-videos','editorial-picks']
+    #         mode = 16
+    #         # editor_picks = self.extract_id_list(url, editor_picks=True)
+    #         # self.log('build_topics_menu: editor_picks = %s' % editor_picks)
+    #     else:
+    #         self.log('build_topics_menu: Unknown mode.')
+    #         return
 
-        if self.apiv3_url:
-            cursor = page if page else ''
-            name = topic_id if topic_id else ''
-            return self.build_menu_apiv3(query, mode, page=cursor, name=name,
-                                         segment_option=self.segments_topics)
+    #     if self.apiv3_url:
+    #         cursor = page if page else ''
+    #         name = topic_id if topic_id else ''
+    #         return self.build_menu_apiv3(query, mode, page=cursor, name=name,
+    #                                      segment_option=self.segments_topics)
 
-        id_list = self.extract_id_list(url)
-        try:
-            page = int(page)
-        except TypeError:
-            page = 1
+    #     id_list = self.extract_id_list(url)
+    #     try:
+    #         page = int(page)
+    #     except TypeError:
+    #         page = 1
 
-        reduced_id_list = id_list[(page - 1) * self.number_of_episodes:
-                                  page * self.number_of_episodes]
-        for vid in reduced_id_list:
-            self.build_episode_menu(
-                vid, include_segments=False,
-                segment_option=self.segments_topics)
+    #     reduced_id_list = id_list[(page - 1) * self.number_of_episodes:
+    #                               page * self.number_of_episodes]
+    #     for vid in reduced_id_list:
+    #         self.build_episode_menu(
+    #             vid, include_segments=False,
+    #             segment_option=self.segments_topics)
 
-        try:
-            vid = id_list[page*self.number_of_episodes]
-            next_item = xbmcgui.ListItem(
-                label='>> ' + LANGUAGE(30073))  # Next page
-            next_item.setProperty('IsPlayable', 'false')
-            name = topic_id if topic_id else ''
-            purl = self.build_url(mode=mode, name=name, page=page+1)
-            xbmcplugin.addDirectoryItem(
-                handle=self.handle, url=purl,
-                listitem=next_item, isFolder=True)
-        except IndexError:
-            return
+    #     try:
+    #         vid = id_list[page*self.number_of_episodes]
+    #         next_item = xbmcgui.ListItem(
+    #             label='>> ' + LANGUAGE(30073))  # Next page
+    #         next_item.setProperty('IsPlayable', 'false')
+    #         name = topic_id if topic_id else ''
+    #         purl = self.build_url(mode=mode, name=name, page=page+1)
+    #         xbmcplugin.addDirectoryItem(
+    #             handle=self.handle, url=purl,
+    #             listitem=next_item, isFolder=True)
+    #     except IndexError:
+    #         return
 
     def build_episode_menu(self, video_id, include_segments=True,
                            segment_option=False, audio=False):
@@ -1020,9 +1032,9 @@ class SRGSSR(object):
         banner     -- URL of the show's banner (default: None)
         is_folder  -- indicates if the item is a folder (default: False)
         audio      -- boolean value to indicate if the entry contains
-        fanart     -- fanart to be used instead of default image
-        urn        -- override urn from json_entry
                       audio (default: False)
+        fanart     -- fanart to be used instead of default image
+        urn        -- override urn from json_entry      
         """
         self.log('build_entry')
         title = utils.try_get(json_entry, 'title')
@@ -1085,7 +1097,8 @@ class SRGSSR(object):
 
         # Prefer urn over vid as it contains already all data 
         # (bu, media type, id) and will be used anyway for the stream lookup
-        name = urn if urn else vid
+        # name = urn if urn else vid
+        name = vid
 
         if is_folder:
             list_item.setProperty('IsPlayable', 'false')
