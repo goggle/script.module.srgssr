@@ -1533,9 +1533,9 @@ class SRGSSR(object):
                         continue
                     updated_query_list.append(query)
                 updated_query_list.append(
-                    ('start', utils.CompatStr(start_time)))
+                    ('start', str(start_time)))
                 updated_query_list.append(
-                    ('end', utils.CompatStr(end_time)))
+                    ('end', str(end_time)))
                 new_query = utils.assemble_query_string(updated_query_list)
                 surl_result = ParseResult(
                     parsed_url.scheme, parsed_url.netloc,
