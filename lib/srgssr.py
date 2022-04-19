@@ -244,11 +244,17 @@ class SRGSSR(object):
                 'displayItem': self.get_boolean_setting('Recommendations'),
                 'icon': self.icon,
             }, {
-                # Newest shows
-                'identifier': 'Newest_Shows',
-                'name': self.plugin_language(30054),
+                # # Newest shows
+                # 'identifier': 'Newest_Shows',
+                # 'name': self.plugin_language(30054),
+                # 'mode': 13,
+                # 'displayItem': self.get_boolean_setting('Newest_Shows'),
+                # 'icon': self.icon,
+                # Topics
+                'identifier': 'Topics',
+                'name': 'Topics',  # TODO: Language
                 'mode': 13,
-                'displayItem': self.get_boolean_setting('Newest_Shows'),
+                'displayItem': True,  # TODO: read from settings
                 'icon': self.icon,
             }, {
                 # Most clicked shows
@@ -458,17 +464,6 @@ class SRGSSR(object):
             try:    return data['data']
             except: return []
 
-        # json_url = ('http://il.srgssr.ch/integrationlayer/1.0/ue/%s/tv/'
-        #             'assetGroup/editorialPlayerAlphabetical.json') % self.bu
-        # json_response = json.loads(self.open_url(json_url))
-        # show_list = utils.try_get(
-        #     json_response,
-        #     ('AssetGroups', 'Show'), data_type=list, default=[])
-        # if not show_list:
-        #     self.log('read_all_available_shows: No shows found.')
-        #     return []
-        # return show_list
-
     def build_all_shows_menu(self, favids=None):
         """
         Builds a list of folders containing the names of all the current
@@ -489,58 +484,58 @@ class SRGSSR(object):
         self.log('build_favourite_shows_menu')
         self.build_all_shows_menu(favids=self.read_favourite_show_ids())
 
-    def build_show_folder(self, show_id, radio_tv):
-        """
-        Creates a folder for a specified show.
+    # def build_show_folder(self, show_id, radio_tv):
+    #     """
+    #     Creates a folder for a specified show.
 
-        Keyword arguments:
-        show_id   -- the id of the show
-        radio_tv  -- either 'radio' or 'tv'
-        """
-        if self.apiv3_url:
-            query_url = self.apiv3_url + 'show-detail/' + show_id
-            result = json.loads(self.open_url(query_url, use_cache=True))
-            if result and 'data' in result:
-                show_info = result['data']
-        else:
-            if radio_tv not in ('radio', 'tv'):
-                self.log(('build_show_folder: radio_tv must be '
-                          'either \'radio\' or \'tv\''))
-                return
-            query_url = '%s/play/%s/show/%s/latestEpisodes' % (
-                self.host_url, radio_tv, show_id)
-            result = json.loads(self.open_url(query_url, use_cache=True))
-            show_info = utils.try_get(result, 'show', data_type=dict, default={})
+    #     Keyword arguments:
+    #     show_id   -- the id of the show
+    #     radio_tv  -- either 'radio' or 'tv'
+    #     """
+    #     if self.apiv3_url:
+    #         query_url = self.apiv3_url + 'show-detail/' + show_id
+    #         result = json.loads(self.open_url(query_url, use_cache=True))
+    #         if result and 'data' in result:
+    #             show_info = result['data']
+    #     else:
+    #         if radio_tv not in ('radio', 'tv'):
+    #             self.log(('build_show_folder: radio_tv must be '
+    #                       'either \'radio\' or \'tv\''))
+    #             return
+    #         query_url = '%s/play/%s/show/%s/latestEpisodes' % (
+    #             self.host_url, radio_tv, show_id)
+    #         result = json.loads(self.open_url(query_url, use_cache=True))
+    #         show_info = utils.try_get(result, 'show', data_type=dict, default={})
 
-        if not show_info:
-            self.log('build_show_folder: Unable to retrieve show info')
-            return
-        title = utils.try_get(show_info, 'title')
-        if not title:
-            self.log('build_show_folder: Unable to retrieve title')
-            return
-        list_item = xbmcgui.ListItem(label=title)
-        list_item.setProperty('IsPlayable', 'false')
-        list_item.setInfo('video', {
-                'title': title,
-                'plot': utils.try_get(
-                    show_info, 'lead') or utils.try_get(
-                        show_info, 'description')
-            })
-        image = thumbnail = utils.try_get(show_info, 'imageUrl')
-        image = re.sub(r'/\d+x\d+', '', image)
-        if not image:
-            image = self.fanart
-            thumbnail = self.icon
-        banner_image = utils.try_get(show_info, 'bannerImageUrl', default=None)
-        list_item.setArt({
-            'thumb': thumbnail,
-            'poster': image,
-            'fanart': image,
-            'banner': banner_image
-        })
-        url = self.build_url(mode=20, name=show_id)
-        xbmcplugin.addDirectoryItem(self.handle, url, list_item, isFolder=True)
+    #     if not show_info:
+    #         self.log('build_show_folder: Unable to retrieve show info')
+    #         return
+    #     title = utils.try_get(show_info, 'title')
+    #     if not title:
+    #         self.log('build_show_folder: Unable to retrieve title')
+    #         return
+    #     list_item = xbmcgui.ListItem(label=title)
+    #     list_item.setProperty('IsPlayable', 'false')
+    #     list_item.setInfo('video', {
+    #             'title': title,
+    #             'plot': utils.try_get(
+    #                 show_info, 'lead') or utils.try_get(
+    #                     show_info, 'description')
+    #         })
+    #     image = thumbnail = utils.try_get(show_info, 'imageUrl')
+    #     image = re.sub(r'/\d+x\d+', '', image)
+    #     if not image:
+    #         image = self.fanart
+    #         thumbnail = self.icon
+    #     banner_image = utils.try_get(show_info, 'bannerImageUrl', default=None)
+    #     list_item.setArt({
+    #         'thumb': thumbnail,
+    #         'poster': image,
+    #         'fanart': image,
+    #         'banner': banner_image
+    #     })
+    #     url = self.build_url(mode=20, name=show_id)
+    #     xbmcplugin.addDirectoryItem(self.handle, url, list_item, isFolder=True)
 
     def build_newest_favourite_menu(self, page=1, audio=False):
         """
@@ -778,6 +773,9 @@ class SRGSSR(object):
             id_regex, readable_string_response)]
         return id_list
 
+    def build_topics_overview_menu(self):
+        self.build_menu_apiv3('topics', None)  # TODO: mode?
+
     # def build_topics_menu(self, name, topic_id=None, page=1):
     #     """
     #     Builds a list of videos (can also be folders) for a given topic.
@@ -1006,6 +1004,7 @@ class SRGSSR(object):
             self.build_menu_apiv3(f'videos-by-show-id?showId={id}', None)  # TODO: mode
         elif 'video' in urn:
             self.build_episode_menu(id)
+        # TODO: Add 'topic'
 
     def build_entry(
             self, json_entry, banner=None, is_folder=False, audio=False,
@@ -1354,6 +1353,7 @@ class SRGSSR(object):
             xbmcplugin.addDirectoryItem(
                 self.handle, nurl, next_item, isFolder=True)
 
+    # TODO: Remove search for shows (only allow search for medias)
     def build_search_show_menu(self, name='', audio=False):
         """
         Peforms a search for shows.
@@ -1386,7 +1386,8 @@ class SRGSSR(object):
             try:
                 for show in data['data']['results']:
                     if indicator in show['urn']:
-                        self.build_show_folder(show['id'], radio_tv)
+                        # self.build_show_folder(show['id'], radio_tv)
+                        self.build_menu_by_urn(show['urn'])
             except: pass
             return
         
@@ -1399,6 +1400,7 @@ class SRGSSR(object):
                 indicator in utils.try_get(m, 'urn'))]
         for show_id in show_ids:
             self.build_show_folder(show_id, radio_tv)
+            self.build_menu_by_urn(show['urn'])
 
     def get_auth_url(self, url, segment_data=None):
         """
