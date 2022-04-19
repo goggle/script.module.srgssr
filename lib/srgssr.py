@@ -100,10 +100,9 @@ class SRGSSR(object):
         # Plugin options:
         self.debug = self.get_boolean_setting(
             'Enable_Debugging')
-        self.segments = self.get_boolean_setting(
-            'Enable_Show_Segments')
-        self.segments_topics = self.get_boolean_setting(
-            'Enable_Segments_Topics')
+
+        self.segments = True  # TODO: remove
+        self.segments_topics = False  # TODO: remove
         self.subtitles = self.get_boolean_setting(
             'Extract_Subtitles')
         self.prefer_hd = self.get_boolean_setting(
@@ -367,7 +366,7 @@ class SRGSSR(object):
                     listitem=list_item, isFolder=True)
 
     def build_menu_apiv3(self, queries, mode, page=None, page_hash=None, name='',
-                         include_segments=False, segment_option=False):
+                         include_segments=False, segment_option=False, whitelist_ids=[]):
         """
         Builds a menu based on the API v3, which is supposed to be more stable
         
@@ -395,12 +394,13 @@ class SRGSSR(object):
 
             items.sort(key=lambda item: item['date'], reverse=True)
             for item in items:
-                if include_segments or segment_option:
-                    self.build_episode_menu(item['id'],
-                                    include_segments=include_segments,
-                                    segment_option=segment_option)
-                else:
-                    self.build_entry(item)
+                self.build_entry_apiv3(item, whitelist_ids=whitelist_ids)
+                # if include_segments or segment_option:
+                #     self.build_episode_menu(item['id'],
+                #                     include_segments=include_segments,
+                #                     segment_option=segment_option)
+                # else:
+                #     self.build_entry(item)
             return
 
         if page:        cursor = page
@@ -421,12 +421,13 @@ class SRGSSR(object):
         else:                   items = data
 
         for item in items:
-            if include_segments or segment_option:
-                self.build_episode_menu(item['id'],
-                                    include_segments=include_segments,
-                                    segment_option=segment_option)
-            else:
-                self.build_entry(item)
+            self.build_entry_apiv3(item, whitelist_ids=whitelist_ids)
+            # if include_segments or segment_option:
+            #     self.build_episode_menu(item['id'],
+            #                         include_segments=include_segments,
+            #                         segment_option=segment_option)
+            # else:
+            #     self.build_entry(item)
 
         if 'next' in data:
             cursor = data['next']
@@ -457,16 +458,16 @@ class SRGSSR(object):
             try:    return data['data']
             except: return []
 
-        json_url = ('http://il.srgssr.ch/integrationlayer/1.0/ue/%s/tv/'
-                    'assetGroup/editorialPlayerAlphabetical.json') % self.bu
-        json_response = json.loads(self.open_url(json_url))
-        show_list = utils.try_get(
-            json_response,
-            ('AssetGroups', 'Show'), data_type=list, default=[])
-        if not show_list:
-            self.log('read_all_available_shows: No shows found.')
-            return []
-        return show_list
+        # json_url = ('http://il.srgssr.ch/integrationlayer/1.0/ue/%s/tv/'
+        #             'assetGroup/editorialPlayerAlphabetical.json') % self.bu
+        # json_response = json.loads(self.open_url(json_url))
+        # show_list = utils.try_get(
+        #     json_response,
+        #     ('AssetGroups', 'Show'), data_type=list, default=[])
+        # if not show_list:
+        #     self.log('read_all_available_shows: No shows found.')
+        #     return []
+        # return show_list
 
     def build_all_shows_menu(self, favids=None):
         """
@@ -479,80 +480,14 @@ class SRGSSR(object):
                   the shows on that list will be build. (default: None)
         """
         self.log('build_all_shows_menu')
-        show_list = self.read_all_available_shows()
-
-        list_items = []
-        for jse in show_list:
-            title = utils.try_get(jse, 'title')
-            show_id = utils.try_get(jse, 'id')
-            if not (title and show_id):
-                self.log('build_all_shows_menu: No title or id found, skipping show')
-                continue
-
-            # Skip if we build the 'favourite show menu' and the current
-            # show id is not in our favourites:
-            if favids is not None and show_id not in favids:
-                continue
-
-            list_item = xbmcgui.ListItem(label=title)
-            list_item.setProperty('IsPlayable', 'false')
-            list_item.setInfo(
-                'video',
-                {
-                    'title': title,
-                    'plot': utils.try_get(
-                        jse, 'description') or utils.try_get(jse, 'lead'),
-                }
-            )
-
-            # try: image_url = jse['imageUrl']
-            # except:
-            #     image_url = utils.try_get(
-            #         jse,
-            #         ('Image', 'ImageRepresentations',
-            #         'ImageRepresentation', 0, 'url'))
-            # if image_url:
-            #     image_url = re.sub(r'/\d+x\d+', '', image_url)
-            #     thumbnail = image_url + '/scale/width/688'
-            #     banner = image_url.replace(
-            #         'WEBVISUAL',
-            #         'HEADER_SRF_PLAYER')
-            # else:
-            #     image_url = self.fanart
-            #     thumbnail = self.icon
-            #     banner = None
-
-            # list_item.setArt({
-            #     'thumb': thumbnail,
-            #     'poster': image_url,
-            #     'fanart': image_url,
-            #     'banner': banner,
-            # })
-            image_url = utils.try_get(jse, 'imageUrl')
-            poster_url = utils.try_get(jse, 'posterImageUrl')
-            if not image_url:
-                image_url = self.fanart
-            if not poster_url:
-                poster_url = self.fanart
-            list_item.setArt({
-                'thumb': image_url,
-                'poster': poster_url,
-                'fanart': image_url,
-                'banner': image_url,
-            })
-
-            url = self.build_url(mode=20, name=show_id)
-            list_items.append((url, list_item, True))
-        xbmcplugin.addDirectoryItems(
-            self.handle, list_items, totalItems=len(list_items))
+        self.build_menu_apiv3('shows', None, whitelist_ids=favids)  # TODO: mode?
 
     def build_favourite_shows_menu(self):
         """
         Builds a list of folders for the favourite shows.
         """
         self.log('build_favourite_shows_menu')
-        favourite_show_ids = self.read_favourite_show_ids()
-        self.build_all_shows_menu(favids=favourite_show_ids)
+        self.build_all_shows_menu(favids=self.read_favourite_show_ids())
 
     def build_show_folder(self, show_id, radio_tv):
         """
@@ -626,135 +561,135 @@ class SRGSSR(object):
             return self.build_menu_apiv3(queries, 12)
 
         # TODO: This depends on the local time settings
-        now = datetime.datetime.now()
-        current_month_date = datetime.date.today().strftime('%m-%Y')
-        list_of_episodes_dict = []
-        banners = {}
-        section = 'radio' if audio else 'tv'
-        for sid in show_ids:
-            json_url = ('%s/play/%s/show/%s/latestEpisodes?numberOfEpisodes=%d'
-                        '&tillMonth=%s') % (self.host_url, section, sid,
-                                            number_of_days, current_month_date)
-            self.log('build_newest_favourite_menu. Open URL %s.' % json_url)
-            response = json.loads(self.open_url(json_url))
-            banner_image = utils.try_get(
-                response,
-                ('show', 'bannerImageUrl'))
-            if re.match(r'.+/\d+x\d+$', banner_image):
-                banner_image += '/scale/width/1000'
+        # now = datetime.datetime.now()
+        # current_month_date = datetime.date.today().strftime('%m-%Y')
+        # list_of_episodes_dict = []
+        # banners = {}
+        # section = 'radio' if audio else 'tv'
+        # for sid in show_ids:
+        #     json_url = ('%s/play/%s/show/%s/latestEpisodes?numberOfEpisodes=%d'
+        #                 '&tillMonth=%s') % (self.host_url, section, sid,
+        #                                     number_of_days, current_month_date)
+        #     self.log('build_newest_favourite_menu. Open URL %s.' % json_url)
+        #     response = json.loads(self.open_url(json_url))
+        #     banner_image = utils.try_get(
+        #         response,
+        #         ('show', 'bannerImageUrl'))
+        #     if re.match(r'.+/\d+x\d+$', banner_image):
+        #         banner_image += '/scale/width/1000'
 
-            episode_list = utils.try_get(
-                response, 'episodes', data_type=list, default=[])
-            for episode in episode_list:
-                date_time = utils.parse_datetime(
-                    utils.try_get(episode, 'date'))
-                if date_time and \
-                        date_time >= now + datetime.timedelta(-number_of_days):
-                    list_of_episodes_dict.append(episode)
-                    banners.update(
-                        {utils.try_get(episode, 'id'): banner_image})
-        sorted_list_of_episodes_dict = sorted(
-            list_of_episodes_dict, key=lambda k: utils.parse_datetime(
-                utils.try_get(k, 'date')), reverse=True)
-        try:
-            page = int(page)
-        except TypeError:
-            page = 1
-        reduced_list = sorted_list_of_episodes_dict[
-            (page - 1)*self.number_of_episodes:page*self.number_of_episodes]
-        for episode in reduced_list:
-            segments = utils.try_get(
-                episode, 'segments', data_type=list, default=[])
-            is_folder = True if segments and self.segments else False
-            self.build_entry(
-                episode, banner=utils.try_get(episode, 'id'),
-                is_folder=is_folder, audio=audio)
+        #     episode_list = utils.try_get(
+        #         response, 'episodes', data_type=list, default=[])
+        #     for episode in episode_list:
+        #         date_time = utils.parse_datetime(
+        #             utils.try_get(episode, 'date'))
+        #         if date_time and \
+        #                 date_time >= now + datetime.timedelta(-number_of_days):
+        #             list_of_episodes_dict.append(episode)
+        #             banners.update(
+        #                 {utils.try_get(episode, 'id'): banner_image})
+        # sorted_list_of_episodes_dict = sorted(
+        #     list_of_episodes_dict, key=lambda k: utils.parse_datetime(
+        #         utils.try_get(k, 'date')), reverse=True)
+        # try:
+        #     page = int(page)
+        # except TypeError:
+        #     page = 1
+        # reduced_list = sorted_list_of_episodes_dict[
+        #     (page - 1)*self.number_of_episodes:page*self.number_of_episodes]
+        # for episode in reduced_list:
+        #     segments = utils.try_get(
+        #         episode, 'segments', data_type=list, default=[])
+        #     is_folder = True if segments and self.segments else False
+        #     self.build_entry(
+        #         episode, banner=utils.try_get(episode, 'id'),
+        #         is_folder=is_folder, audio=audio)
 
-        if len(sorted_list_of_episodes_dict) > page * self.number_of_episodes:
-            next_item = xbmcgui.ListItem(
-                label='>> ' + LANGUAGE(30073))  # Next page
-            next_item.setProperty('IsPlayable', 'false')
-            purl = self.build_url(mode=12, page=page+1)
-            xbmcplugin.addDirectoryItem(
-                self.handle, purl, next_item, isFolder=True)
+        # if len(sorted_list_of_episodes_dict) > page * self.number_of_episodes:
+        #     next_item = xbmcgui.ListItem(
+        #         label='>> ' + LANGUAGE(30073))  # Next page
+        #     next_item.setProperty('IsPlayable', 'false')
+        #     purl = self.build_url(mode=12, page=page+1)
+        #     xbmcplugin.addDirectoryItem(
+        #         self.handle, purl, next_item, isFolder=True)
 
-    def build_show_menu(self, show_id, page_hash=None, audio=False):
-        """
-        Builds a list of videos (can be folders in case of segmented videos)
-        for a show given by its show id.
+    # def build_show_menu(self, show_id, page_hash=None, audio=False):
+    #     """
+    #     Builds a list of videos (can be folders in case of segmented videos)
+    #     for a show given by its show id.
 
-        Keyword arguments:
-        show_id   -- the id of the show
-        page_hash -- the page hash to get the list of
-                     another page (default: None)
-        audio     -- boolean value to indicate if the show is a
-                     radio show (default: False)
-        """
-        self.log(('build_show_menu, show_id = %s, page_hash=%s, '
-                  'audio=%s') % (show_id, page_hash, audio))
+    #     Keyword arguments:
+    #     show_id   -- the id of the show
+    #     page_hash -- the page hash to get the list of
+    #                  another page (default: None)
+    #     audio     -- boolean value to indicate if the show is a
+    #                  radio show (default: False)
+    #     """
+    #     self.log(('build_show_menu, show_id = %s, page_hash=%s, '
+    #               'audio=%s') % (show_id, page_hash, audio))
 
-        if self.apiv3_url:
-            cursor = page_hash if page_hash else ''
-            return self.build_menu_apiv3('videos-by-show-id?showId=' + show_id,
-                                         20, page_hash=cursor, name=show_id)
+    #     if self.apiv3_url:
+    #         cursor = page_hash if page_hash else ''
+    #         return self.build_menu_apiv3('videos-by-show-id?showId=' + show_id,
+    #                                      20, page_hash=cursor, name=show_id)
 
-        # TODO: This depends on the local time settings
-        current_month_date = datetime.date.today().strftime('%m-%Y')
-        section = 'radio' if audio else 'tv'
-        if not page_hash:
-            json_url = ('%s/play/%s/show/%s/latestEpisodes?numberOfEpisodes=%d'
-                        '&tillMonth=%s') % (self.host_url, section, show_id,
-                                            self.number_of_episodes,
-                                            current_month_date)
-        else:
-            json_url = ('%s/play/%s/show/%s/latestEpisodes?nextPageHash=%s'
-                        '&tillMonth=%s') % (self.host_url, section, show_id,
-                                            page_hash, current_month_date)
+    #     # TODO: This depends on the local time settings
+    #     current_month_date = datetime.date.today().strftime('%m-%Y')
+    #     section = 'radio' if audio else 'tv'
+    #     if not page_hash:
+    #         json_url = ('%s/play/%s/show/%s/latestEpisodes?numberOfEpisodes=%d'
+    #                     '&tillMonth=%s') % (self.host_url, section, show_id,
+    #                                         self.number_of_episodes,
+    #                                         current_month_date)
+    #     else:
+    #         json_url = ('%s/play/%s/show/%s/latestEpisodes?nextPageHash=%s'
+    #                     '&tillMonth=%s') % (self.host_url, section, show_id,
+    #                                         page_hash, current_month_date)
 
-        json_response = json.loads(self.open_url(json_url))
-        try:
-            banner_image = utils.try_get(
-                json_response, ('show', 'bannerImageUrl'))
+    #     json_response = json.loads(self.open_url(json_url))
+    #     try:
+    #         banner_image = utils.try_get(
+    #             json_response, ('show', 'bannerImageUrl'))
 
-            # Banner image urls sometimes end with '/3x1'. They are
-            # only accesible if we append '/scale/width/\d+':
-            if re.match(r'.+/\d+x\d+$', banner_image):
-                banner_image += '/scale/width/1000'
-        except KeyError:
-            banner_image = None
+    #         # Banner image urls sometimes end with '/3x1'. They are
+    #         # only accesible if we append '/scale/width/\d+':
+    #         if re.match(r'.+/\d+x\d+$', banner_image):
+    #             banner_image += '/scale/width/1000'
+    #     except KeyError:
+    #         banner_image = None
 
-        next_page_hash = None
-        if 'nextPageUrl' in json_response:
-            next_page_url = utils.try_get(json_response, 'nextPageUrl')
-            next_page_hash_regex = r'nextPageHash=(?P<hash>[0-9a-f]+)'
-            match = re.search(next_page_hash_regex, next_page_url)
-            if match:
-                next_page_hash = match.group('hash')
+    #     next_page_hash = None
+    #     if 'nextPageUrl' in json_response:
+    #         next_page_url = utils.try_get(json_response, 'nextPageUrl')
+    #         next_page_hash_regex = r'nextPageHash=(?P<hash>[0-9a-f]+)'
+    #         match = re.search(next_page_hash_regex, next_page_url)
+    #         if match:
+    #             next_page_hash = match.group('hash')
 
-        json_episode_list = utils.try_get(
-            json_response, 'episodes', data_type=list, default=[])
-        if not json_episode_list:
-            self.log('No episodes for show %s found.' % show_id)
-            return
+    #     json_episode_list = utils.try_get(
+    #         json_response, 'episodes', data_type=list, default=[])
+    #     if not json_episode_list:
+    #         self.log('No episodes for show %s found.' % show_id)
+    #         return
 
-        for episode_entry in json_episode_list:
-            segments = utils.try_get(
-                episode_entry, 'segments', data_type=list, default=[])
-            enable_segments = True if self.segments and segments else False
-            self.build_entry(
-                episode_entry, banner=banner_image, is_folder=enable_segments,
-                audio=audio)
+    #     for episode_entry in json_episode_list:
+    #         segments = utils.try_get(
+    #             episode_entry, 'segments', data_type=list, default=[])
+    #         enable_segments = True if self.segments and segments else False
+    #         self.build_entry(
+    #             episode_entry, banner=banner_image, is_folder=enable_segments,
+    #             audio=audio)
 
-        if next_page_hash and page_hash != next_page_hash:
-            self.log('page_hash: %s' % page_hash)
-            self.log('next_hash: %s' % next_page_hash)
-            next_item = xbmcgui.ListItem(
-                label='>> ' + LANGUAGE(30073))  # Next page
-            next_item.setProperty('IsPlayable', 'false')
-            url = self.build_url(
-                mode=20, name=show_id, page_hash=next_page_hash)
-            xbmcplugin.addDirectoryItem(
-                self.handle, url, next_item, isFolder=True)
+    #     if next_page_hash and page_hash != next_page_hash:
+    #         self.log('page_hash: %s' % page_hash)
+    #         self.log('next_hash: %s' % next_page_hash)
+    #         next_item = xbmcgui.ListItem(
+    #             label='>> ' + LANGUAGE(30073))  # Next page
+    #         next_item.setProperty('IsPlayable', 'false')
+    #         url = self.build_url(
+    #             mode=20, name=show_id, page_hash=next_page_hash)
+    #         xbmcplugin.addDirectoryItem(
+    #             self.handle, url, next_item, isFolder=True)
 
     # def build_topics_overview_menu(self, newest_or_most_clicked):
     #     """
@@ -1019,6 +954,58 @@ class SRGSSR(object):
                 return
             # Generate a simple playable item for the video
             self.build_entry(json_segment, banner)
+
+    def build_entry_apiv3(self, data, whitelist_ids=[]):
+        # self.log(f'build_entry_apiv3: urn = {utils.try_get(data, 'urn')}')
+        self.log(f'build_entry_apiv3: urn = %s' % utils.try_get(data, 'urn'))
+        urn = data['urn']
+        title = utils.try_get(data, 'title')
+        media_id = utils.try_get(data, 'id')
+        if whitelist_ids and media_id not in whitelist_ids:
+            return
+        description = utils.try_get(data, 'description')
+        lead = utils.try_get(data, 'lead')
+        image_url = utils.try_get(data, 'imageUrl')
+        poster_image_url = utils.try_get(data, 'posterImageUrl')
+        show_image_url = utils.try_get(data, ['show', 'imageUrl'])
+        show_poster_image_url = utils.try_get(data, ['show', 'posterImageUrl'])
+        duration = utils.try_get(data, 'duration', int, default=None)
+        if duration:
+            duration //= 1000
+        date = utils.try_get(data, 'date')
+        kodi_date_string = date
+        dto = utils.parse_datetime(date)
+        kodi_date_string = dto.strftime('%Y-%m-%d') if dto else None
+
+        label = title or urn
+        list_item = xbmcgui.ListItem(label=label)
+        list_item.setInfo(
+            'video',  # TODO: audio?
+            {
+                'title': title,
+                'plot': description or lead,  # TODO?
+                'plotoutline': lead or description,
+                'duration': duration,
+                'aired': kodi_date_string,
+            }
+        )
+        list_item.setArt({
+            'thumb': image_url,
+            'poster': poster_image_url or show_poster_image_url,
+            'fanart': show_image_url,
+            'banner': image_url or show_image_url,
+        })
+        list_item.setProperty('IsPlayable', 'false')  # TODO: should this be added?
+        url = self.build_url(mode=100, name=urn)
+        xbmcplugin.addDirectoryItem(
+            self.handle, url, list_item, isFolder=True)
+
+    def build_menu_by_urn(self, urn):
+        id = urn.split(':')[-1]
+        if 'show' in urn:
+            self.build_menu_apiv3(f'videos-by-show-id?showId={id}', None)  # TODO: mode
+        elif 'video' in urn:
+            self.build_episode_menu(id)
 
     def build_entry(
             self, json_entry, banner=None, is_folder=False, audio=False,
