@@ -1425,19 +1425,22 @@ class SRGSSR(object):
             url += ('?' if '?' not in url else '&') + auth_params
         return url
 
-    def play_video(self, video_id, audio=False):
+    def play_video(self, media_id_or_urn, audio=False):
         """
         Gets the stream information starts to play it.
 
         Keyword arguments:
-        video_id -- the urn or id of the video to play
-        audio    -- boolean value to indicate if the content is
-                    audio (default: False)
+        media_id_or_urn -- the urn or id of the media to play
+        audio           -- boolean value to indicate if the content is
+                           audio (default: False)
         """
-        if video_id.startswith('urn:'): urn = video_id
+        if media_id_or_urn.startswith('urn:'):
+            urn = media_id_or_urn
+            media_id = media_id_or_urn.split(':')[-1]
         else:
             media_type = 'audio' if audio else 'video'
-            urn = 'urn:' + self.bu + ':' + media_type + ':' + video_id
+            urn = 'urn:' + self.bu + ':' + media_type + ':' + media_id_or_urn
+            media_id = media_id_or_urn
         self.log('play_video, urn = ' + urn)
 
         detail_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
@@ -1452,7 +1455,7 @@ class SRGSSR(object):
         first_chapter = utils.try_get(
             chapter_list, 0, data_type=dict, default={})
         chapter = next(
-            (e for e in chapter_list if e.get('id') == video_id),
+            (e for e in chapter_list if e.get('id') == media_id),
             first_chapter)
         resource_list = utils.try_get(
             chapter, 'resourceList', data_type=list, default=[])
@@ -1475,7 +1478,7 @@ class SRGSSR(object):
             else:
                 stream_url = candidates[0]['url']
 
-            play_item = xbmcgui.ListItem(video_id, path=stream_url)
+            play_item = xbmcgui.ListItem(media_id, path=stream_url)
             xbmcplugin.setResolvedUrl(self.handle, True, play_item)
             return
 
@@ -1502,7 +1505,7 @@ class SRGSSR(object):
             segment_list = utils.try_get(
                 chapter, 'segmentList', data_type=list, default=[])
             for segment in segment_list:
-                if utils.try_get(segment, 'id') == video_id:
+                if utils.try_get(segment, 'id') == media_id:
                     start_time = utils.try_get(
                         segment, 'markIn', data_type=int, default=None)
                     if start_time:
