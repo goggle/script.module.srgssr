@@ -1441,7 +1441,7 @@ class SRGSSR(object):
             media_type = 'audio' if audio else 'video'
             urn = 'urn:' + self.bu + ':' + media_type + ':' + media_id_or_urn
             media_id = media_id_or_urn
-        self.log('play_video, urn = ' + urn)
+        self.log('play_video, urn = ' + urn + ', media_id = ' + media_id)
 
         detail_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
                       'mediaComposition/byUrn/' + urn)
@@ -1505,7 +1505,7 @@ class SRGSSR(object):
             segment_list = utils.try_get(
                 chapter, 'segmentList', data_type=list, default=[])
             for segment in segment_list:
-                if utils.try_get(segment, 'id') == media_id:
+                if utils.try_get(segment, 'id') == media_id or utils.try_get(segment, 'urn') == urn:
                     start_time = utils.try_get(
                         segment, 'markIn', data_type=int, default=None)
                     if start_time:
