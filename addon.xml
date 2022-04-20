@@ -13,8 +13,7 @@
     <description lang="en_GB">This addon allows a plugin to use the media libraries of SRG SSR.</description>
     <description lang="de_DE">Dieses Addon erlaubt Plugins den Zugriff auf die Mediatheken von SRG SSR.</description>
     <platform>all</platform>
-    <license>GNU GENERAL PUBLIC LICENSE. Version 3, June 2007</license>
-    <email>seileralex@gmail.com</email>
+    <license>GPL-3.0-or-later</license>
     <source>https://github.com/goggle/script.module.srgssr</source>
     <assets>
         <icon>resources/icon.png</icon>
