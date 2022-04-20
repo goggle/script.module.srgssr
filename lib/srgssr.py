@@ -253,13 +253,6 @@ class SRGSSR(object):
                 'displayItem': True,  # TODO
                 'icon': self.icon,
             }, {
-                # Soon offline
-                'identifier': 'Soon_Offline',
-                'name': self.plugin_language(30056),
-                'mode': 15,
-                'displayItem': self.get_boolean_setting('Soon_Offline'),
-                'icon': self.icon,
-            }, {
                 # Shows by date
                 'identifier': 'Shows_By_Date',
                 'name': self.plugin_language(30057),
@@ -295,41 +288,6 @@ class SRGSSR(object):
                 'displayItem': self.get_boolean_setting(
                     '%s_YouTube' % self.bu.upper()),
                 'icon': self.get_youtube_icon(),
-            }, {
-                # Channels
-                'identifier': 'Radio_Channels',
-                'name': self.plugin_language(30075),
-                'mode': 40,
-                'displayItem': self.get_boolean_setting('Radio_Channels'),
-                'icon': self.icon,
-            }, {
-                # Newest audios
-                'identifier': 'Newest_Audios',
-                'name': self.plugin_language(30076),
-                'mode': 45,
-                'displayItem': False,
-                'icon': self.icon,
-            }, {
-                # Most listened
-                'identifier': 'Most_Listened',
-                'name': self.plugin_language(30077),
-                'mode': 46,
-                'displayItem': self.get_boolean_setting('Most_Listened'),
-                'icon': self.icon,
-            }, {
-                # Live radio
-                'identifier': 'Live_Radio',
-                'name': self.plugin_language(30078),
-                'mode': 47,
-                'displayItem': self.get_boolean_setting('Live_Radio'),
-                'icon': self.icon,
-            }, {
-                # Shows (by topic)
-                'identifier': 'Shows_Topics',
-                'name': self.plugin_language(30079),
-                'mode': 48,
-                'displayItem': self.get_boolean_setting('Shows_Topics'),
-                'icon': self.icon,
             }
         ]
         folders = []
