@@ -54,7 +54,6 @@ IDREGEX = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+'
 
 FAVOURITE_SHOWS_FILENAME = 'favourite_shows.json'
 YOUTUBE_CHANNELS_FILENAME = 'youtube_channels.json'
-RECENT_SHOW_SEARCHES_FILENAME = 'recently_searched_shows.json'
 RECENT_MEDIA_SEARCHES_FILENAME = 'recently_searched_medias.json'
 
 try:
@@ -1221,16 +1220,6 @@ class SRGSSR(object):
                 'mode': 70,
                 'show': True,
                 'icon': self.icon,
-            }, {
-                'name': LANGUAGE(30114),  # 'Search shows'
-                'mode': 29,
-                'show': True,
-                'icon': self.icon,
-            }, {
-                'name': LANGUAGE(30118),  # 'Recently searched shows'
-                'mode': 71,
-                'show': True,
-                'icon': self.icon,
             }
         ]
         for item in items:
@@ -1243,27 +1232,12 @@ class SRGSSR(object):
             xbmcplugin.addDirectoryItem(
                 handle=self.handle, url=url, listitem=list_item, isFolder=True)
 
-    def build_recent_search_menu(self, show_or_media, audio=False):
+    def build_recent_search_menu(self, audio=False):
         """
         Lists folders for the most recent searches.
-
-        Keyword arguments:
-        show_or_media  -- either 'show' or 'media'
-        audio          -- search for audios (default: False)
         """
-        self.log(
-            'build_recent_search_menu, show_or_media = %s, audio = %s' % (
-                show_or_media, audio))
-        if show_or_media not in ('show', 'media'):
-            self.log(('build_recent_search_menu: `show_or_media` must '
-                      'be either \'show\' or \'media\''))
-            return
-        if show_or_media == 'show':
-            filename = RECENT_SHOW_SEARCHES_FILENAME
-        else:
-            filename = RECENT_MEDIA_SEARCHES_FILENAME
-        recent_searches = self.read_searches(filename)
-        mode = 29 if show_or_media == 'show' else 28
+        recent_searches = self.read_searches(RECENT_MEDIA_SEARCHES_FILENAME)
+        mode = 28
         for search in recent_searches:
             list_item = xbmcgui.ListItem(label=search)
             list_item.setProperty('IsPlayable', 'false')
@@ -1354,55 +1328,6 @@ class SRGSSR(object):
                 page_hash=next_page_hash, page=page+1)
             xbmcplugin.addDirectoryItem(
                 self.handle, nurl, next_item, isFolder=True)
-
-    # TODO: Remove search for shows (only allow search for medias)
-    def build_search_show_menu(self, name='', audio=False):
-        """
-        Peforms a search for shows.
-
-        Keyword arguments:
-        name   -- search query (default: '')
-        audio  -- boolean; if set, audio shows will be searched, otherwise
-                  video shows (default: False)
-        """
-        self.log(
-            'build_search_show_menu, name = %s, audio = %s' % (name, audio))
-        url_layout = self.host_url + '/play/search/shows?searchQuery=%s'
-        if name:
-            query_string = name
-        else:
-            dialog = xbmcgui.Dialog()
-            query_string = dialog.input(LANGUAGE(30115))
-            if not query_string:
-                self.log('build_search_show_menu: No input provided')
-                return
-            if True:
-                self.write_search(RECENT_SHOW_SEARCHES_FILENAME, query_string)
-        query_string = quote_plus(query_string)
-        radio_tv = 'radio' if audio else 'tv'
-
-        if self.apiv3_url:
-            url = self.apiv3_url + 'search/shows?searchTerm=' + query_string
-            data = json.loads(self.open_url(url, use_cache=False))
-            indicator = ':radio:' if audio else ':tv:'
-            try:
-                for show in data['data']['results']:
-                    if indicator in show['urn']:
-                        # self.build_show_folder(show['id'], radio_tv)
-                        self.build_menu_by_urn(show['urn'])
-            except: pass
-            return
-        
-        query_url = url_layout % query_string
-        result = json.loads(self.open_url(query_url, use_cache=False))
-        indicator = ':radio:' if audio else ':tv:'
-        show_ids = [m['id'] for m in utils.try_get(
-            result, 'shows', data_type=list, default=[]) if (
-                utils.try_get(m, 'id') and
-                indicator in utils.try_get(m, 'urn'))]
-        for show_id in show_ids:
-            self.build_show_folder(show_id, radio_tv)
-            self.build_menu_by_urn(show['urn'])
 
     def get_auth_url(self, url, segment_data=None):
         """
