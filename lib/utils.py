@@ -23,6 +23,7 @@ import datetime
 import re
 import sys
 
+
 def try_get(dictionary, keys, data_type=str, default=''):
     """
     Accesses a nested dictionary in a save way.
