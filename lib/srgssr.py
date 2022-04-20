@@ -258,10 +258,10 @@ class SRGSSR(object):
                 'icon': self.icon,
             }, {
                 # Most clicked shows
-                'identifier': 'Most_Clicked_Shows',
-                'name': self.plugin_language(30055),
+                'identifier': 'Most_Searched_TV_Shows',
+                'name': 'Most searched TV shows',  # TODO: Language
                 'mode': 14,
-                'displayItem': self.get_boolean_setting('Most_Clicked_Shows'),
+                'displayItem': True,  # TODO
                 'icon': self.icon,
             }, {
                 # Soon offline
@@ -482,6 +482,12 @@ class SRGSSR(object):
         """
         self.log('build_favourite_shows_menu')
         self.build_all_shows_menu(favids=self.read_favourite_show_ids())
+
+    def build_topics_menu(self):
+        self.build_menu_apiv3('topics', None)  # TODO: mode?
+
+    def build_most_searched_shows_menu(self):
+        self.build_menu_apiv3('search/most-searched-tv-shows', None)  # TODO: mode?
 
     # def build_show_folder(self, show_id, radio_tv):
     #     """
@@ -771,9 +777,6 @@ class SRGSSR(object):
         id_list = [m.group('id') for m in re.finditer(
             id_regex, readable_string_response)]
         return id_list
-
-    def build_topics_overview_menu(self):
-        self.build_menu_apiv3('topics', None)  # TODO: mode?
 
     # def build_topics_menu(self, name, topic_id=None, page=1):
     #     """
