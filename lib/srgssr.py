@@ -409,14 +409,18 @@ class SRGSSR(object):
                 #     self.build_entry(item)
             return
 
-        if page:        cursor = page
-        elif page_hash: cursor = page_hash
+        # if page:        cursor = page
+        if page_hash: cursor = page_hash
         else:           cursor = None
 
         if cursor:
-            queries += ('&' if '?' in queries else '?') + 'next=' + cursor
+            data = json.loads(self.open_url(self.apiv3_url + queries + ('&' if '?' in queries else '?') + 'next=' + cursor))
+        else:
+            data = json.loads(self.open_url(self.apiv3_url + queries))
 
-        data = json.loads(self.open_url(self.apiv3_url + queries))
+        cursor = utils.try_get(data, 'next') or utils.try_get(data, ['data', 'next'])
+
+
         try: data = data['data']
         except:
             self.log('No media found.')
@@ -435,16 +439,11 @@ class SRGSSR(object):
             # else:
             #     self.build_entry(item)
 
-        if 'next' in data:
-            cursor = data['next']
-            self.log('next: ' + cursor)
-
-            if page is not None:
-                url = self.build_url(mode=mode, name=name, page=cursor)
-            elif page_hash is not None:
-                url = self.build_url(mode=mode, name=name, page_hash=cursor)
+        if cursor:
+            if page:
+                url = self.build_url(mode=1000, name=queries, page=int(page)+1, page_hash=cursor)
             else:
-                return
+                url = self.build_url(mode=1000, name=queries, page=2, page_hash=cursor)
 
             next_item = xbmcgui.ListItem(label='>> ' + LANGUAGE(30073))  # Next page 
             next_item.setProperty('IsPlayable', 'false')                               
@@ -553,7 +552,7 @@ class SRGSSR(object):
             queries = []
             for sid in show_ids:
                 queries.append('videos-by-show-id?showId=' + sid)
-            return self.build_menu_apiv3(queries, 12)
+            return self.build_menu_apiv3(queries, 12)  # TODO: include page?
 
         # TODO: This depends on the local time settings
         # now = datetime.datetime.now()
