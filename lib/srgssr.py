@@ -390,9 +390,8 @@ class SRGSSR(object):
         This works for the business units 'srf', 'rts', 'rsi' and 'rtr', but
         not for 'swi'.
         """
-        if self.apiv3_url:
-            data = json.loads(self.open_url(self.apiv3_url + 'shows'))
-            return utils.try_get(data, 'data', list, [])
+        data = json.loads(self.open_url(self.apiv3_url + 'shows'))
+        return utils.try_get(data, 'data', list, [])
 
     def build_all_shows_menu(self, favids=None):
         """
@@ -432,11 +431,10 @@ class SRGSSR(object):
         number_of_days = 30
         show_ids = self.read_favourite_show_ids()
 
-        if self.apiv3_url:
-            queries = []
-            for sid in show_ids:
-                queries.append('videos-by-show-id?showId=' + sid)
-            return self.build_menu_apiv3(queries, 12)  # TODO: include page?
+        queries = []
+        for sid in show_ids:
+            queries.append('videos-by-show-id?showId=' + sid)
+        return self.build_menu_apiv3(queries, 12)  # TODO: include page?
 
     def extract_id_list(self, url, editor_picks=False):
         """
@@ -799,19 +797,10 @@ class SRGSSR(object):
         """
         self.log('build_date_menu, date_string = %s' % date_string)
 
-        if self.apiv3_url:
-            # API v3 use the date in sortable format, i.e. year first
-            elems = date_string.split('-')
-            query = 'videos-by-date/%s-%s-%s' % (elems[2], elems[1], elems[0])
-            return self.build_menu_apiv3(query, 0, segment_option=self.segments)
-
-        url = self.host_url + '/play/tv/programDay/%s' % date_string
-        id_list = self.extract_id_list(url)
-
-        for vid in id_list:
-            self.build_episode_menu(
-                vid, include_segments=False,
-                segment_option=self.segments)
+        # API v3 use the date in sortable format, i.e. year first
+        elems = date_string.split('-')
+        query = 'videos-by-date/%s-%s-%s' % (elems[2], elems[1], elems[0])
+        return self.build_menu_apiv3(query, 0, segment_option=self.segments)
 
     def build_search_menu(self):
         """
@@ -906,35 +895,9 @@ class SRGSSR(object):
                 query_string, self.number_of_episodes, media_type)
             query = 'search/media?searchTerm=' + query_string
 
-        if self.apiv3_url:
-            query = query + '&mediaType=' + media_type + '&includeAggregations=false'
-            cursor = page_hash if page_hash else ''
-            return self.build_menu_apiv3(query, mode, page_hash=cursor,
-                                         name=query_string)
-            
-        result = json.loads(self.open_url(query_url, use_cache=False))
-        media_ids = [
-            m['id'] for m in utils.try_get(
-                result, 'media', data_type=list,
-                default=[]) if utils.try_get(m, 'id')]
-        for media_id in media_ids:
-            self.build_episode_menu(media_id)
-        next_page_hash = utils.try_get(result, 'nextPageHash')
-        if next_page_hash and page_hash != next_page_hash:
-            next_item = xbmcgui.ListItem(label='>> ' + LANGUAGE(30073))
-            next_item.setProperty('IsPlayable', 'false')
-            next_item.setArt({
-                'thumb': self.icon,
-            })
-            try:
-                page = int(page)
-            except TypeError:
-                page = 1
-            nurl = self.build_url(
-                mode=mode, name=query_string,
-                page_hash=next_page_hash, page=page+1)
-            xbmcplugin.addDirectoryItem(
-                self.handle, nurl, next_item, isFolder=True)
+        query = query + '&mediaType=' + media_type + '&includeAggregations=false'
+        cursor = page_hash if page_hash else ''
+        return self.build_menu_apiv3(query, mode, page_hash=cursor, name=query_string)
 
     def get_auth_url(self, url, segment_data=None):
         """
