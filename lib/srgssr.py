@@ -420,7 +420,7 @@ class SRGSSR(object):
     def build_most_searched_shows_menu(self):
         self.build_menu_apiv3('search/most-searched-tv-shows', None)  # TODO: mode?
 
-    def build_newest_favourite_menu(self, page=1, audio=False):
+    def build_newest_favourite_menu(self, page=1):
         """
         Builds a Kodi list of the newest favourite shows.
 
@@ -470,8 +470,7 @@ class SRGSSR(object):
             id_regex, readable_string_response)]
         return id_list
 
-    def build_episode_menu(self, video_id, include_segments=True,
-                           segment_option=False, audio=False):
+    def build_episode_menu(self, video_id, include_segments=True, segment_option=False, audio=False):
         """
         Builds a list entry for a episode by a given video id.
         The segment entries for that episode can be included too.
@@ -596,7 +595,7 @@ class SRGSSR(object):
         label = title or urn
         list_item = xbmcgui.ListItem(label=label)
         list_item.setInfo(
-            'video',  # TODO: audio?
+            'video',
             {
                 'title': title,
                 'plot': description or lead,  # TODO?
@@ -625,9 +624,8 @@ class SRGSSR(object):
         # TODO: Add 'topic'
 
     # TODO: Is this still needed?
-    def build_entry(
-            self, json_entry, banner=None, is_folder=False, audio=False,
-            fanart=None, urn=None):
+    def build_entry(self, json_entry, banner=None, is_folder=False, audio=False,
+                    fanart=None, urn=None):
         """
         Builds an list item for a video or folder by giving the json part,
         describing this video.
@@ -707,7 +705,6 @@ class SRGSSR(object):
 
         if is_folder:
             list_item.setProperty('IsPlayable', 'false')
-            # TODO: check if something needs to be done for audio entries
             url = self.build_url(mode=21, name=name)
         else:
             list_item.setProperty('IsPlayable', 'true')
@@ -816,25 +813,20 @@ class SRGSSR(object):
                 vid, include_segments=False,
                 segment_option=self.segments)
 
-    def build_search_menu(self, audio=False):
+    def build_search_menu(self):
         """
         Builds a menu for searches.
-
-        Keyword arguments:
-        audio  -- Indicates whether audios shall be searched
-                  (default: False).
         """
-        self.log('build_search_menu, audio = %s' % audio)
         items = [
             {
-                # 'Search videos' or 'Search audios'
-                'name': LANGUAGE(30112) if not audio else LANGUAGE(30113),
+                # 'Search videos'
+                'name': LANGUAGE(30112),
                 'mode': 28,
                 'show': True,
                 'icon': self.icon,
             }, {
-                # 'Recently searched videos' or 'Recently searched audios'
-                'name': LANGUAGE(30116) if not audio else LANGUAGE(30117),
+                # 'Recently searched videos'
+                'name': LANGUAGE(30116),
                 'mode': 70,
                 'show': True,
                 'icon': self.icon,
@@ -850,7 +842,7 @@ class SRGSSR(object):
             xbmcplugin.addDirectoryItem(
                 handle=self.handle, url=url, listitem=list_item, isFolder=True)
 
-    def build_recent_search_menu(self, audio=False):
+    def build_recent_search_menu(self):
         """
         Lists folders for the most recent searches.
         """
@@ -864,8 +856,7 @@ class SRGSSR(object):
             xbmcplugin.addDirectoryItem(
                 handle=self.handle, url=url, listitem=list_item, isFolder=True)
 
-    def build_search_media_menu(self, mode=28, name='', page=1,
-                                page_hash='', audio=False):
+    def build_search_media_menu(self, mode=28, name='', page=1, page_hash=''):
         """
         Sets up a search for media. If called without name, a dialog will
         show up for a search input. Then the search will be performed and
@@ -877,13 +868,11 @@ class SRGSSR(object):
         page       -- the page number (default: 1)
         page_hash  -- the page hash when coming from a previous page
                       (default: '')
-        audio      -- boolean value to search for audios instead of
-                      videos (default: False)
         """
         self.log(('build_search_media_menu, mode = %s, name = %s, page = %s'
-                  ', page_hash = %s, audio = %s') % (mode, name, page,
-                                                     page_hash, audio))
-        media_type = 'audio' if audio else 'video'
+                  ', page_hash = %s') % (mode, name, page,
+                                                     page_hash))
+        media_type = 'video'
         url_layout = self.host_url + ('/play/search/media?searchQuery=%s'
                                       '&numberOfMedias=%s&mediaType=%s'
                                       '&includeAggregations=false')
@@ -929,7 +918,7 @@ class SRGSSR(object):
                 result, 'media', data_type=list,
                 default=[]) if utils.try_get(m, 'id')]
         for media_id in media_ids:
-            self.build_episode_menu(media_id, audio=audio)
+            self.build_episode_menu(media_id)
         next_page_hash = utils.try_get(result, 'nextPageHash')
         if next_page_hash and page_hash != next_page_hash:
             next_item = xbmcgui.ListItem(label='>> ' + LANGUAGE(30073))
@@ -1158,15 +1147,12 @@ class SRGSSR(object):
         play_item = xbmcgui.ListItem('Live', path=auth_url)
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
-    def manage_favourite_shows(self, audio=False):
+    def manage_favourite_shows(self):
         """
         Opens a Kodi multiselect dialog to let the user choose
         his/her personal favourite show list.
         """
-        if audio:
-            show_list = self.extract_shows_information('radio')
-        else:
-            show_list = self.read_all_available_shows()
+        show_list = self.read_all_available_shows()
         stored_favids = self.read_favourite_show_ids()
         names = [x['title'] for x in show_list]
         ids = [x['id'] for x in show_list]
