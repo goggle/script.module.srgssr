@@ -56,11 +56,6 @@ FAVOURITE_SHOWS_FILENAME = 'favourite_shows.json'
 YOUTUBE_CHANNELS_FILENAME = 'youtube_channels.json'
 RECENT_MEDIA_SEARCHES_FILENAME = 'recently_searched_medias.json'
 
-try:
-    KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split('.')[0])
-except:
-    KODI_VERSION = 16
-
 def get_params():
     """
     Parses the Kodi plugin URL and returns its parameters
@@ -1040,11 +1035,8 @@ class SRGSSR(object):
             if subs:
                 play_item.setSubtitles(subs)
 
-        # Try to use inputstream adaptive
-        inp = 'inputstream' if KODI_VERSION >= 19 else 'inputstreamaddon'
-        ia  = 'inputstream.adaptive'
-        play_item.setProperty(inp, ia)
-        play_item.setProperty(ia + '.manifest_type', mf_type)
+        play_item.setProperty('inputstream', 'inputstream.adaptive')
+        play_item.setProperty('inputstream.adaptive.manifest_type', mf_type)
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
     def get_subtitles(self, url, name):
