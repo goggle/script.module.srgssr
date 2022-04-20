@@ -91,9 +91,6 @@ class SRGSSR(object):
         # Plugin options:
         self.debug = self.get_boolean_setting(
             'Enable_Debugging')
-
-        self.segments = True  # TODO: remove
-        self.segments_topics = False  # TODO: remove
         self.subtitles = self.get_boolean_setting(
             'Extract_Subtitles')
         self.prefer_hd = self.get_boolean_setting(
@@ -102,7 +99,7 @@ class SRGSSR(object):
 
         # Delete temporary subtitle files urn*.vtt
         clean_dir = 'special://temp'
-        dirname, filenames = xbmcvfs.listdir(clean_dir)
+        _, filenames = xbmcvfs.listdir(clean_dir)
         for filename in filenames:
             if filename.startswith('urn') and filename.endswith('.vtt'):
                 xbmcvfs.delete(clean_dir + '/' + filename)
@@ -317,8 +314,7 @@ class SRGSSR(object):
                     listitem=list_item, isFolder=True)
 
     def build_menu_apiv3(self, queries, mode, page=None, page_hash=None,
-                         name='', include_segments=False,
-                         segment_option=False, whitelist_ids=[]):
+                         name='', whitelist_ids=[]):
         """
         Builds a menu based on the API v3, which is supposed to be more stable
 
@@ -636,7 +632,6 @@ class SRGSSR(object):
             self.build_episode_menu(id)
         # TODO: Add 'topic'
 
-    # TODO: Is this still needed?
     def build_entry(self, json_entry, banner=None, is_folder=False,
                     audio=False, fanart=None, urn=None):
         """
@@ -712,6 +707,7 @@ class SRGSSR(object):
                     self.log(
                         'No WEBVTT subtitles found for video id %s.' % vid)
 
+        # TODO:
         # Prefer urn over vid as it contains already all data
         # (bu, media type, id) and will be used anyway for the stream lookup
         # name = urn if urn else vid
@@ -816,7 +812,7 @@ class SRGSSR(object):
         # API v3 use the date in sortable format, i.e. year first
         elems = date_string.split('-')
         query = 'videos-by-date/%s-%s-%s' % (elems[2], elems[1], elems[0])
-        return self.build_menu_apiv3(query, 0, segment_option=self.segments)
+        return self.build_menu_apiv3(query, 0)
 
     def build_search_menu(self):
         """
@@ -1049,11 +1045,7 @@ class SRGSSR(object):
                     new_query, parsed_url.fragment)
                 auth_url = surl_result.geturl()
         self.log('play_video, auth_url = %s' % auth_url)
-        # TODO: simplify
-        try:
-            title = json_response['episode']['title']
-        except Exception:
-            title = urn
+        title = utils.try_get(json_response, ['episode', 'title'], str, urn)
         play_item = xbmcgui.ListItem(title, path=auth_url)
         if self.subtitles:
             subs = self.get_subtitles(stream_url, urn)
