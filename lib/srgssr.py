@@ -314,6 +314,7 @@ class SRGSSR(object):
                     handle=self.handle, url=purl,
                     listitem=list_item, isFolder=True)
 
+    # TODO: check parameters
     def build_menu_apiv3(self, queries, mode, page=None, page_hash=None,
                          name='', whitelist_ids=None):
         """
@@ -333,13 +334,10 @@ class SRGSSR(object):
             items = []
             for query in queries:
                 data = json.loads(self.open_url(self.apiv3_url + query))
-                if data and 'data' in data:
-                    # TODO: simplify
-                    data = data['data']
-                    if 'data' in data:
-                        data = data['data']
-                    if 'results' in data:
-                        data = data['results']
+                if data:
+                    data = utils.try_get(data, ['data', 'data'], list, []) or \
+                        utils.try_get(data, ['data', 'results'], list, []) or \
+                        utils.try_get(data, 'data', list, [])
                     for item in data:
                         items.append(item)
 
@@ -423,12 +421,17 @@ class SRGSSR(object):
         self.log('build_favourite_shows_menu')
         self.build_all_shows_menu(favids=self.read_favourite_show_ids())
 
-    # TODO: docstring
     def build_topics_menu(self):
+        """
+        Builds a menu containing the topics from the SRGSSR API.
+        """
         self.build_menu_apiv3('topics', None)  # TODO: mode?
 
-    # TODO: docstring
     def build_most_searched_shows_menu(self):
+        """
+        Builds a menu containing the most searched TV shows from
+        the SRGSSR API.
+        """
         self.build_menu_apiv3(
             'search/most-searched-tv-shows', None)  # TODO: mode?
 
@@ -879,21 +882,11 @@ class SRGSSR(object):
         self.log(('build_search_media_menu, mode = %s, name = %s, page = %s'
                   ', page_hash = %s') % (mode, name, page, page_hash))
         media_type = 'video'
-        # url_layout = self.host_url + ('/play/search/media?searchQuery=%s'
-        #                               '&numberOfMedias=%s&mediaType=%s'
-        #                               '&includeAggregations=false')
         if name:
             # `name` is provided by `next_page` folder or
             # by previously performed search
             query_string = name
-            if page_hash:
-                # `name` is provided by `next_page` folder, so it is
-                # already quoted
-                # query_url = (url_layout + '&nextPageHash=%s') % (
-                #     query_string, self.number_of_episodes, media_type,
-                #     page_hash)
-                pass
-            else:
+            if not page_hash:
                 # `name` is provided by previously performed search, so it
                 # needs to be processed first
                 query_string = quote_plus(query_string)
@@ -904,17 +897,14 @@ class SRGSSR(object):
             if not query_string:
                 self.log('build_search_media_menu: No input provided')
                 return
-            if True:  # TODO: remove
-                self.write_search(RECENT_MEDIA_SEARCHES_FILENAME, query_string)
+            self.write_search(RECENT_MEDIA_SEARCHES_FILENAME, query_string)
             query_string = quote_plus(query_string)
             query = 'search/media?searchTerm=' + query_string
 
-        # query = query + '&mediaType=' + media_type \
-        # + '&includeAggregations=false'
         query = f'{query}&mediaType={media_type}&includeAggregations=false'
         cursor = page_hash if page_hash else ''
-        return self.build_menu_apiv3(
-            query, mode, page_hash=cursor, name=query_string)
+        return self.build_menu_apiv3(query, mode, page_hash=cursor,
+                                     name=query_string)
 
     def get_auth_url(self, url, segment_data=None):
         """
