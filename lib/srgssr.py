@@ -481,7 +481,7 @@ class SRGSSR(object):
         return id_list
 
     def build_episode_menu(self, video_id, include_segments=True,
-            segment_option=False, audio=False):
+                           segment_option=False, audio=False):
         """
         Builds a list entry for a episode by a given video id.
         The segment entries for that episode can be included too.
@@ -1390,7 +1390,6 @@ class SRGSSR(object):
         mode         -- the plugin's URL mode
         """
         channel_ids = self.get_youtube_channel_ids()
-        plugin_url = self.build_url(mode=mode, name='%s')
         youtube_channels.YoutubeChannels(
             self.handle, channel_ids,
             self.addon_id, self.debug).build_channel_overview_menu()
