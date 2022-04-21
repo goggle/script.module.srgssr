@@ -236,7 +236,7 @@ class SRGSSR(object):
                 'identifier': 'Topics',
                 'name': self.plugin_language(30058),
                 'mode': 13,
-                'displayItem': False,  # TODO: not (yet) supported
+                'displayItem': False,  # not (yet) supported
                 'icon': self.icon,
             }, {
                 # Most searched TV shows
@@ -258,14 +258,14 @@ class SRGSSR(object):
                 'identifier': 'Live_TV',
                 'name': self.plugin_language(30072),
                 'mode': 26,
-                'displayItem': self.get_boolean_setting('Live_TV'),
+                'displayItem': False,  # currently not supported
                 'icon': self.icon,
             }, {
                 # SRF.ch live
                 'identifier': 'SRF_Live',
                 'name': self.plugin_language(30070),
                 'mode': 18,
-                'displayItem': self.get_boolean_setting('SRF_Live'),
+                'displayItem': False,  # currently not supported
                 'icon': self.icon,
             }, {
                 # Search
@@ -315,8 +315,8 @@ class SRGSSR(object):
                     listitem=list_item, isFolder=True)
 
     # TODO: check parameters
-    def build_menu_apiv3(self, queries, mode, page=None, page_hash=None,
-                         name='', whitelist_ids=None):
+    def build_menu_apiv3(self, queries, mode=1000, page=1, page_hash=None,
+                         whitelist_ids=None):
         """
         Builds a menu based on the API v3, which is supposed to be more stable
 
@@ -325,7 +325,6 @@ class SRGSSR(object):
         mode          -- mode for the URL of the next folder
         page          -- current page
         page_hash     -- cursor for fetching the next items
-        name          -- name of the list
         whitelist_ids -- list of ids that should be displayed, if it is set
                          to `None` it will be ignored
         """
@@ -365,12 +364,8 @@ class SRGSSR(object):
             self.log('No media found.')
             return
 
-        if 'data' in data:
-            items = data['data']
-        elif 'results' in data:
-            items = data['results']
-        else:
-            items = data
+        items = utils.try_get(data, 'data', list, []) or \
+            utils.try_get(data, 'results', list, []) or data
 
         for item in items:
             self.build_entry_apiv3(item, whitelist_ids=whitelist_ids)
@@ -378,11 +373,11 @@ class SRGSSR(object):
         if cursor:
             if page:
                 url = self.build_url(
-                    mode=1000, name=queries, page=int(page)+1,
+                    mode=mode, name=queries, page=int(page)+1,
                     page_hash=cursor)
             else:
                 url = self.build_url(
-                    mode=1000, name=queries, page=2, page_hash=cursor)
+                    mode=mode, name=queries, page=2, page_hash=cursor)
 
             next_item = xbmcgui.ListItem(
                 label='>> ' + LANGUAGE(30073))  # Next page
@@ -411,8 +406,7 @@ class SRGSSR(object):
                   the shows on that list will be build. (default: None)
         """
         self.log('build_all_shows_menu')
-        self.build_menu_apiv3(
-            'shows', None, whitelist_ids=favids)  # TODO: mode?
+        self.build_menu_apiv3('shows', whitelist_ids=favids)
 
     def build_favourite_shows_menu(self):
         """
@@ -425,15 +419,14 @@ class SRGSSR(object):
         """
         Builds a menu containing the topics from the SRGSSR API.
         """
-        self.build_menu_apiv3('topics', None)  # TODO: mode?
+        self.build_menu_apiv3('topics')
 
     def build_most_searched_shows_menu(self):
         """
         Builds a menu containing the most searched TV shows from
         the SRGSSR API.
         """
-        self.build_menu_apiv3(
-            'search/most-searched-tv-shows', None)  # TODO: mode?
+        self.build_menu_apiv3('search/most-searched-tv-shows')
 
     def build_newest_favourite_menu(self, page=1):
         """
@@ -449,7 +442,7 @@ class SRGSSR(object):
         queries = []
         for sid in show_ids:
             queries.append('videos-by-show-id?showId=' + sid)
-        return self.build_menu_apiv3(queries, 12)  # TODO: include page?
+        return self.build_menu_apiv3(queries)
 
     def extract_id_list(self, url, editor_picks=False):
         """
@@ -585,8 +578,15 @@ class SRGSSR(object):
             # Generate a simple playable item for the video
             self.build_entry(json_segment, banner)
 
-    # TODO: docstring
     def build_entry_apiv3(self, data, whitelist_ids=None):
+        """
+        Builds a entry from a APIv3 JSON data entry.
+
+        Keyword arguments:
+        data            -- The JSON entry
+        whitelist_ids   -- If not `None` only items with an id that is in that
+                           list will be generated (default: None)
+        """
         self.log('build_entry_apiv3: urn = %s' % utils.try_get(data, 'urn'))
         urn = data['urn']
         title = utils.try_get(data, 'title')
@@ -632,10 +632,15 @@ class SRGSSR(object):
             self.handle, url, list_item, isFolder=True)
 
     def build_menu_by_urn(self, urn):
+        """
+        Builds a menu from an urn.
+
+        Keyword arguments:
+        urn     -- The urn (e.g. 'urn:srf:show:<id>' or 'urn:rts:video:<id>')
+        """
         id = urn.split(':')[-1]
         if 'show' in urn:
-            self.build_menu_apiv3(
-                f'videos-by-show-id?showId={id}', None)  # TODO: mode
+            self.build_menu_apiv3(f'videos-by-show-id?showId={id}')
         elif 'video' in urn:
             self.build_episode_menu(id)
         # TODO: Add 'topic'
@@ -820,7 +825,7 @@ class SRGSSR(object):
         # API v3 use the date in sortable format, i.e. year first
         elems = date_string.split('-')
         query = 'videos-by-date/%s-%s-%s' % (elems[2], elems[1], elems[0])
-        return self.build_menu_apiv3(query, 0)
+        return self.build_menu_apiv3(query)
 
     def build_search_menu(self):
         """
@@ -865,7 +870,6 @@ class SRGSSR(object):
             xbmcplugin.addDirectoryItem(
                 handle=self.handle, url=url, listitem=list_item, isFolder=True)
 
-    # TODO: investigate
     def build_search_media_menu(self, mode=28, name='', page=1, page_hash=''):
         """
         Sets up a search for media. If called without name, a dialog will
@@ -903,8 +907,7 @@ class SRGSSR(object):
 
         query = f'{query}&mediaType={media_type}&includeAggregations=false'
         cursor = page_hash if page_hash else ''
-        return self.build_menu_apiv3(query, mode, page_hash=cursor,
-                                     name=query_string)
+        return self.build_menu_apiv3(query, page_hash=cursor)
 
     def get_auth_url(self, url, segment_data=None):
         """
