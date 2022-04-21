@@ -234,16 +234,17 @@ class SRGSSR(object):
             }, {
                 # Topics
                 'identifier': 'Topics',
-                'name': 'Topics',  # TODO: Language
+                'name': self.plugin_language(30058),
                 'mode': 13,
-                'displayItem': True,  # TODO: read from settings
+                'displayItem': False,  # TODO: not (yet) supported
                 'icon': self.icon,
             }, {
-                # Most clicked shows
+                # Most searched TV shows
                 'identifier': 'Most_Searched_TV_Shows',
-                'name': 'Most searched TV shows',  # TODO: Language
+                'name': self.plugin_language(30059),
                 'mode': 14,
-                'displayItem': True,  # TODO
+                'displayItem': self.get_boolean_setting(
+                    'Most_Searched_TV_Shows'),
                 'icon': self.icon,
             }, {
                 # Shows by date
@@ -298,7 +299,7 @@ class SRGSSR(object):
         'displayItem', 'icon', 'purl' (a dictionary to build the plugin url).
         """
         for item in folders:
-            if item.get('displayItem') is not False:
+            if item.get('displayItem'):
                 list_item = xbmcgui.ListItem(label=item['name'])
                 list_item.setProperty('IsPlayable', 'false')
                 list_item.setArt({
@@ -420,9 +421,11 @@ class SRGSSR(object):
         self.log('build_favourite_shows_menu')
         self.build_all_shows_menu(favids=self.read_favourite_show_ids())
 
+    # TODO: docstring
     def build_topics_menu(self):
         self.build_menu_apiv3('topics', None)  # TODO: mode?
 
+    # TODO: docstring
     def build_most_searched_shows_menu(self):
         self.build_menu_apiv3(
             'search/most-searched-tv-shows', None)  # TODO: mode?
@@ -475,8 +478,7 @@ class SRGSSR(object):
             id_regex, readable_string_response)]
         return id_list
 
-    def build_episode_menu(
-            self, video_id, include_segments=True,
+    def build_episode_menu(self, video_id, include_segments=True,
             segment_option=False, audio=False):
         """
         Builds a list entry for a episode by a given video id.
