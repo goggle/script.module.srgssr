@@ -1388,8 +1388,7 @@ class SRGSSR(object):
         plugin_url = self.build_url(mode=mode, name='%s')
         youtube_channels.YoutubeChannels(
             self.handle, channel_ids,
-            self.addon_id, self.debug).build_channel_overview_menu(
-                plugin_channel_url=plugin_url)
+            self.addon_id, self.debug).build_channel_overview_menu()
 
     def build_youtube_channel_menu(self, cid, mode, page=1, page_token=''):
         """
