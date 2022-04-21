@@ -81,21 +81,16 @@ class SRGSSR(object):
         self.fanart = self.real_settings.getAddonInfo('fanart')
         self.language = LANGUAGE
         self.plugin_language = self.real_settings.getLocalizedString
-        self.host_url = 'https://www.%s.ch' % bu
+        self.host_url = f'https://www.{bu}.ch'
         self.apiv3_url = f'{self.host_url}/play/v3/api/{bu}/production/'
-        self.data_uri = ('special://home/addons/%s/resources/'
-                         'data') % self.addon_id
-        self.media_uri = ('special://home/addons/%s/resources/'
-                          'media') % self.addon_id
+        self.data_uri = f'special://home/addons/{self.addon_id}/resources/data'
+        self.media_uri = \
+            f'special://home/addons/{self.addon_id}/resources/media'
 
         # Plugin options:
-        self.debug = self.get_boolean_setting(
-            'Enable_Debugging')
-        self.subtitles = self.get_boolean_setting(
-            'Extract_Subtitles')
-        self.prefer_hd = self.get_boolean_setting(
-            'Prefer_HD')
-        self.number_of_episodes = 10
+        self.debug = self.get_boolean_setting('Enable_Debugging')
+        self.subtitles = self.get_boolean_setting('Extract_Subtitles')
+        self.prefer_hd = self.get_boolean_setting('Prefer_HD')
 
         # Delete temporary subtitle files urn*.vtt
         clean_dir = 'special://temp'
