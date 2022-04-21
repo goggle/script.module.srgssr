@@ -315,16 +315,18 @@ class SRGSSR(object):
                     listitem=list_item, isFolder=True)
 
     def build_menu_apiv3(self, queries, mode, page=None, page_hash=None,
-                         name='', whitelist_ids=[]):
+                         name='', whitelist_ids=None):
         """
         Builds a menu based on the API v3, which is supposed to be more stable
 
         Keyword arguments:
-        queries      -- the query string or a list of several queries
-        mode         -- mode for the URL of the next folder
-        page         -- current page
-        page_hash    -- cursor for fetching the next items
-        name         -- name of the list
+        queries       -- the query string or a list of several queries
+        mode          -- mode for the URL of the next folder
+        page          -- current page
+        page_hash     -- cursor for fetching the next items
+        name          -- name of the list
+        whitelist_ids -- list of ids that should be displayed, if it is set
+                         to `None` it will be ignored
         """
         if isinstance(queries, list):
             # Build a combined and sorted list for several queries
@@ -580,12 +582,13 @@ class SRGSSR(object):
             # Generate a simple playable item for the video
             self.build_entry(json_segment, banner)
 
-    def build_entry_apiv3(self, data, whitelist_ids=[]):
+    # TODO: docstring
+    def build_entry_apiv3(self, data, whitelist_ids=None):
         self.log('build_entry_apiv3: urn = %s' % utils.try_get(data, 'urn'))
         urn = data['urn']
         title = utils.try_get(data, 'title')
         media_id = utils.try_get(data, 'id')
-        if whitelist_ids and media_id not in whitelist_ids:
+        if whitelist_ids is not None and media_id not in whitelist_ids:
             return
         description = utils.try_get(data, 'description')
         lead = utils.try_get(data, 'lead')
