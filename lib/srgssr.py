@@ -126,8 +126,8 @@ class SRGSSR(object):
         if self.debug:
             if level == xbmc.LOGERROR:
                 msg += ' ,' + traceback.format_exc()
-        message = ADDON_ID + '-' + ADDON_VERSION + '-' + msg
-        xbmc.log(msg=message, level=level)
+            message = ADDON_ID + '-' + ADDON_VERSION + '-' + msg
+            xbmc.log(msg=message, level=level)
 
     @staticmethod
     def build_url(mode=None, name=None, url=None, page_hash=None, page=None):
