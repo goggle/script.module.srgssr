@@ -311,7 +311,7 @@ class SRGSSR(object):
 
     # TODO: check parameters
     def build_menu_apiv3(self, queries, mode=1000, page=1, page_hash=None,
-                         whitelist_ids=None):
+                         is_show=False, whitelist_ids=None):
         """
         Builds a menu based on the API v3, which is supposed to be more stable
 
@@ -320,6 +320,7 @@ class SRGSSR(object):
         mode          -- mode for the URL of the next folder
         page          -- current page
         page_hash     -- cursor for fetching the next items
+        is_show       -- indicates if the menu contains only shows
         whitelist_ids -- list of ids that should be displayed, if it is set
                          to `None` it will be ignored
         """
@@ -337,7 +338,8 @@ class SRGSSR(object):
 
             items.sort(key=lambda item: item['date'], reverse=True)
             for item in items:
-                self.build_entry_apiv3(item, whitelist_ids=whitelist_ids)
+                self.build_entry_apiv3(
+                    item, is_show=is_show, whitelist_ids=whitelist_ids)
             return
 
         if page_hash:
@@ -363,7 +365,8 @@ class SRGSSR(object):
             utils.try_get(data, 'results', list, []) or data
 
         for item in items:
-            self.build_entry_apiv3(item, whitelist_ids=whitelist_ids)
+            self.build_entry_apiv3(
+                item, is_show=is_show, whitelist_ids=whitelist_ids)
 
         if cursor:
             if page:
@@ -401,7 +404,7 @@ class SRGSSR(object):
                   the shows on that list will be build. (default: None)
         """
         self.log('build_all_shows_menu')
-        self.build_menu_apiv3('shows', whitelist_ids=favids)
+        self.build_menu_apiv3('shows', is_show=True, whitelist_ids=favids)
 
     def build_favourite_shows_menu(self):
         """
@@ -421,7 +424,7 @@ class SRGSSR(object):
         Builds a menu containing the most searched TV shows from
         the SRGSSR API.
         """
-        self.build_menu_apiv3('search/most-searched-tv-shows')
+        self.build_menu_apiv3('search/most-searched-tv-shows', is_show=True)
 
     def build_newest_favourite_menu(self, page=1):
         """
@@ -517,6 +520,10 @@ class SRGSSR(object):
                 available for video_id %s' % video_id)
             return
 
+        show_image_url = utils.try_get(json_response, ['show', 'imageUrl'])
+        show_poster_image_url = utils.try_get(
+            json_response, ['show', 'posterImageUrl'])
+        # TODO: remove
         try:
             banner = utils.try_get(json_response, ('show', 'bannerImageUrl'))
             if re.match(r'.+/\d+x\d+$', banner):
@@ -544,22 +551,32 @@ class SRGSSR(object):
             if include_segments:
                 # Generate entries for the whole video and
                 # all the segments of this video.
-                self.build_entry(json_chapter, banner=banner)
+                self.build_entry(
+                    json_chapter, show_image_url=show_image_url,
+                    show_poster_image_url=show_poster_image_url)
 
                 if audio and chapter_index == 0:
                     for aid in json_chapter_list[1:]:
-                        self.build_entry(aid, banner=banner)
+                        self.build_entry(
+                            aid, show_image_url=show_image_url,
+                            show_poster_image_url=show_poster_image_url)
 
                 for segment in json_segment_list:
-                    self.build_entry(segment, banner=banner)
+                    self.build_entry(
+                        segment, show_image_url=show_image_url,
+                        show_poster_image_url=show_poster_image_url)
             else:
                 if segment_option and json_segment_list:
                     # Generate a folder for the video
                     self.build_entry(
-                        json_chapter, banner=banner, is_folder=True)
+                        json_chapter, is_folder=True,
+                        show_image_url=show_image_url,
+                        show_poster_image_url=show_poster_image_url)
                 else:
                     # Generate a simple playable item for the video
-                    self.build_entry(json_chapter, banner=banner)
+                    self.build_entry(
+                        json_chapter, show_image_url=show_image_url,
+                        show_poster_image_url=show_poster_image_url)
         else:
             json_segment = None
             for segment in json_segment_list:
@@ -571,9 +588,11 @@ class SRGSSR(object):
                     for video_id %s' % video_id)
                 return
             # Generate a simple playable item for the video
-            self.build_entry(json_segment, banner)
+            self.build_entry(
+                json_segment, show_image_url=show_image_url,
+                show_poster_image_url=show_poster_image_url)
 
-    def build_entry_apiv3(self, data, whitelist_ids=None):
+    def build_entry_apiv3(self, data, is_show=False, whitelist_ids=None):
         """
         Builds a entry from a APIv3 JSON data entry.
 
@@ -601,7 +620,6 @@ class SRGSSR(object):
         kodi_date_string = date
         dto = utils.parse_datetime(date)
         kodi_date_string = dto.strftime('%Y-%m-%d') if dto else None
-
         label = title or urn
         list_item = xbmcgui.ListItem(label=label)
         list_item.setInfo(
@@ -614,11 +632,17 @@ class SRGSSR(object):
                 'aired': kodi_date_string,
             }
         )
+        if is_show:
+            poster = show_poster_image_url or poster_image_url or \
+                show_image_url or image_url
+        else:
+            poster = image_url or poster_image_url or \
+                show_poster_image_url or show_image_url
         list_item.setArt({
             'thumb': image_url,
-            'poster': poster_image_url or show_poster_image_url,
-            'fanart': show_image_url,
-            'banner': image_url or show_image_url,
+            'poster': poster,
+            'fanart': show_image_url or self.fanart,
+            'banner': show_image_url or image_url,
         })
         # TODO: should this be added?
         list_item.setProperty('IsPlayable', 'false')
@@ -640,33 +664,37 @@ class SRGSSR(object):
             self.build_episode_menu(id)
         # TODO: Add 'topic'
 
-    def build_entry(self, json_entry, banner=None, is_folder=False,
-                    audio=False, fanart=None, urn=None):
+    def build_entry(self, json_entry, is_folder=False, audio=False,
+                    fanart=None, urn=None, show_image_url=None,
+                    show_poster_image_url=None):
         """
         Builds an list item for a video or folder by giving the json part,
         describing this video.
 
         Keyword arguments:
-        json_entry -- the part of the json describing the video
-        banner     -- URL of the show's banner (default: None)
-        is_folder  -- indicates if the item is a folder (default: False)
-        audio      -- boolean value to indicate if the entry contains
-                      audio (default: False)
-        fanart     -- fanart to be used instead of default image
-        urn        -- override urn from json_entry
+        json_entry              -- the part of the json describing the video
+        is_folder               -- indicates if the item is a folder
+                                   (default: False)
+        audio                   -- boolean value to indicate if the entry
+                                   contains audio (default: False)
+        fanart                  -- fanart to be used instead of default image
+        urn                     -- override urn from json_entry
+        show_image_url          -- url of the image of the show
+        show_poster_image_url   -- url of the poster image of the show
         """
         self.log('build_entry')
         title = utils.try_get(json_entry, 'title')
         vid = utils.try_get(json_entry, 'id')
         description = utils.try_get(json_entry, 'description')
         lead = utils.try_get(json_entry, 'lead')
-        image = utils.try_get(json_entry, 'imageUrl')
+        image_url = utils.try_get(json_entry, 'imageUrl')
+        poster_image_url = utils.try_get(json_entry, 'posterImageUrl')
         if not urn:
             urn = utils.try_get(json_entry, 'urn')
 
         # RTS image links have a strange appendix '/16x9'.
         # This needs to be removed from the URL:
-        image = re.sub(r'/\d+x\d+', '', image)
+        image_url = re.sub(r'/\d+x\d+', '', image_url)
 
         duration = utils.try_get(
             json_entry, 'duration', data_type=int, default=None)
@@ -693,13 +721,15 @@ class SRGSSR(object):
         )
 
         if not fanart:
-            fanart = image
+            fanart = image_url
 
+        poster = image_url or poster_image_url or \
+            show_poster_image_url or show_image_url
         list_item.setArt({
-            'thumb': image,
-            'poster': image,
-            'fanart': fanart,
-            'banner': banner,
+            'thumb': image_url,
+            'poster': poster,
+            'fanart': show_image_url or fanart,
+            'banner': show_image_url or image_url,
         })
 
         if not audio:
