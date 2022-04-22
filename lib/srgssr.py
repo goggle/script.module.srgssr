@@ -309,7 +309,6 @@ class SRGSSR(object):
                     handle=self.handle, url=purl,
                     listitem=list_item, isFolder=True)
 
-    # TODO: check parameters
     def build_menu_apiv3(self, queries, mode=1000, page=1, page_hash=None,
                          is_show=False, whitelist_ids=None):
         """
@@ -523,13 +522,6 @@ class SRGSSR(object):
         show_image_url = utils.try_get(json_response, ['show', 'imageUrl'])
         show_poster_image_url = utils.try_get(
             json_response, ['show', 'posterImageUrl'])
-        # TODO: remove
-        try:
-            banner = utils.try_get(json_response, ('show', 'bannerImageUrl'))
-            if re.match(r'.+/\d+x\d+$', banner):
-                banner += '/scale/width/1000'
-        except KeyError:
-            banner = None
 
         json_chapter_list = utils.try_get(
             json_response, 'chapterList', data_type=list, default=[])
@@ -626,7 +618,7 @@ class SRGSSR(object):
             'video',
             {
                 'title': title,
-                'plot': description or lead,  # TODO?
+                'plot': description or lead,
                 'plotoutline': lead or description,
                 'duration': duration,
                 'aired': kodi_date_string,
@@ -644,8 +636,6 @@ class SRGSSR(object):
             'fanart': show_image_url or self.fanart,
             'banner': show_image_url or image_url,
         })
-        # TODO: should this be added?
-        list_item.setProperty('IsPlayable', 'false')
         url = self.build_url(mode=100, name=urn)
         xbmcplugin.addDirectoryItem(
             self.handle, url, list_item, isFolder=True)
