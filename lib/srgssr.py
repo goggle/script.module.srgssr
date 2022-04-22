@@ -932,17 +932,12 @@ class SRGSSR(object):
         url -- a given stream URL
         """
         self.log('get_auth_url, url = %s' % url)
-        # spl = urlparse.urlparse(url).path.split('/')
         spl = urlps(url).path.split('/')
         token = json.loads(
             self.open_url(
                 'http://tp.srgssr.ch/akahd/token?acl=/%s/%s/*' %
                 (spl[1], spl[2]), use_cache=False)) or {}
         auth_params = token.get('token', {}).get('authparams')
-        if segment_data:
-            # timestep_string = self._get_timestep_token(segment_data)
-            # url += ('?' if '?' not in url else '&') + timestep_string
-            pass
         if auth_params:
             url += ('?' if '?' not in url else '&') + auth_params
         return url
