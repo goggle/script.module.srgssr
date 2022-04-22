@@ -1067,6 +1067,8 @@ class SRGSSR(object):
 
         play_item.setProperty('inputstream', 'inputstream.adaptive')
         play_item.setProperty('inputstream.adaptive.manifest_type', mf_type)
+        play_item.setProperty('IsPlayable', 'true')
+
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
     def get_subtitles(self, url, name):
