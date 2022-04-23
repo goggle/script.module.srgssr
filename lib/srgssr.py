@@ -1343,7 +1343,7 @@ class SRGSSR(object):
         fname  -- the path to the file to be read
         """
         data_file = os.path.join(xbmc.translatePath(self.data_uri), fname)
-        with open(data_file, 'r') as f:
+        with open(data_file, 'r', encoding='utf-8') as f:
             ch_content = json.load(f)
             cids = [elem['channel'] for elem in ch_content.get('channels', [])]
             return cids
