@@ -82,6 +82,8 @@ class SRGSSR(object):
         self.language = LANGUAGE
         self.plugin_language = self.real_settings.getLocalizedString
         self.host_url = f'https://www.{bu}.ch'
+        if bu == 'swi':
+            self.host_url = 'https://play.swissinfo.ch'
         self.apiv3_url = f'{self.host_url}/play/v3/api/{bu}/production/'
         self.data_uri = f'special://home/addons/{self.addon_id}/resources/data'
         self.media_uri = \
