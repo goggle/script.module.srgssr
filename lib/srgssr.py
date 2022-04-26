@@ -64,7 +64,7 @@ def get_params():
     return dict(parse_qsl(sys.argv[2][1:]))
 
 
-class SRGSSR(object):
+class SRGSSR:
     """
     Base class for all SRG SSR related plugins.
     Everything that can be done independently from the business unit
