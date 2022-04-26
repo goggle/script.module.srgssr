@@ -29,6 +29,7 @@ import traceback
 import datetime
 import json
 import requests
+import utils
 
 import xbmc
 import xbmcgui
@@ -37,7 +38,6 @@ import xbmcaddon
 import xbmcvfs
 
 import simplecache
-import utils
 import youtube_channels
 
 
