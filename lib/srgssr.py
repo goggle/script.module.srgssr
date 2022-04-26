@@ -153,7 +153,8 @@ class SRGSSR:
         for query, qname in zip(queries, query_names):
             if query:
                 add = '?' if not added else '&'
-                purl += '%s%s=%s' % (add, qname, quote_plus(query))
+                qplus = quote_plus(query)
+                purl += f'{add}{qname}={qplus}'
                 added = True
         return purl
 
@@ -169,7 +170,7 @@ class SRGSSR:
         cache_response = None
         if use_cache:
             cache_response = self.cache.get(
-                ADDON_NAME + '.open_url, url = %s' % url)
+                f'{ADDON_NAME}.open_url, url = {url}')
         if not cache_response:
             headers = {
                 'User-Agent': ('Mozilla/5.0 (X11; Linux x86_64; rv:59.0)'
@@ -177,16 +178,16 @@ class SRGSSR:
             }
             response = requests.get(url, headers=headers)
             if not response.ok:
-                self.log('open_url: Failed to open url %s' % url)
+                self.log(f'open_url: Failed to open url {url}')
                 xbmcgui.Dialog().notification(
                     ADDON_NAME, LANGUAGE(30100), ICON, 4000)
                 return ''
             self.cache.set(
-                ADDON_NAME + '.open_url, url = %s' % url,
+                f'{ADDON_NAME}.open_url, url = {url}',
                 response.text,
                 expiration=datetime.timedelta(hours=2))
             return response.text
-        return self.cache.get(ADDON_NAME + '.open_url, url = %s' % url)
+        return self.cache.get(f'{ADDON_NAME}.open_url, url = {url}')
 
     def build_main_menu(self, identifiers=[]):
         """
@@ -452,11 +453,11 @@ class SRGSSR:
         editor_picks  -- if set, only extracts ids of editor picks
                          (default: False)
         """
-        self.log('extract_id_list, url = %s' % url)
+        self.log(f'extract_id_list, url = {url}')
         response = self.open_url(url)
         string_response = utils.str_or_none(response, default='')
         if not string_response:
-            self.log('No video ids found on %s' % url)
+            self.log(f'No video ids found on {url}')
             return []
         readable_string_response = string_response.replace('&quot;', '"')
         id_regex = r'''(?x)
@@ -492,18 +493,16 @@ class SRGSSR:
         audio            -- boolean value to indicate if the episode is a
                             radio show (default: False)
         """
-        self.log('build_episode_menu, video_id = %s, include_segments = %s' %
-                 (video_id, include_segments))
+        self.log(f'build_episode_menu, video_id = {video_id}')
         content_type = 'audio' if audio else 'video'
         json_url = ('https://il.srgssr.ch/integrationlayer/2.0/%s/'
                     'mediaComposition/%s/%s.json') % (self.bu, content_type,
                                                       video_id)
-        self.log('build_episode_menu. Open URL %s' % json_url)
+        self.log(f'build_episode_menu. Open URL {json_url}')
         try:
             json_response = json.loads(self.open_url(json_url))
         except Exception:
-            self.log('build_episode_menu: Cannot open media json for %s.'
-                     % video_id)
+            self.log(f'build_episode_menu: Cannot open json for {video_id}.')
             return
 
         chapter_urn = utils.try_get(json_response, 'chapterUrn')
@@ -516,8 +515,8 @@ class SRGSSR:
         segment_id = match_segment_id.group('id') if match_segment_id else None
 
         if not chapter_id:
-            self.log('build_episode_menu: No valid chapter URN \
-                available for video_id %s' % video_id)
+            self.log(f'build_episode_menu: No valid chapter URN \
+                available for video_id {video_id}')
             return
 
         show_image_url = utils.try_get(json_response, ['show', 'imageUrl'])
@@ -534,8 +533,8 @@ class SRGSSR:
                 chapter_index = ind
                 break
         if not json_chapter:
-            self.log('build_episode_menu: No chapter ID found \
-                for video_id %s' % video_id)
+            self.log(f'build_episode_menu: No chapter ID found \
+                for video_id {video_id}')
             return
 
         json_segment_list = utils.try_get(
@@ -577,8 +576,8 @@ class SRGSSR:
                     json_segment = segment
                     break
             if not json_segment:
-                self.log('build_episode_menu: No segment ID found \
-                    for video_id %s' % video_id)
+                self.log(f'build_episode_menu: No segment ID found \
+                    for video_id {video_id}')
                 return
             # Generate a simple playable item for the video
             self.build_entry(
@@ -594,8 +593,8 @@ class SRGSSR:
         whitelist_ids   -- If not `None` only items with an id that is in that
                            list will be generated (default: None)
         """
-        self.log('build_entry_apiv3: urn = %s' % utils.try_get(data, 'urn'))
         urn = data['urn']
+        self.log(f'build_entry_apiv3: urn = {urn}')
         title = utils.try_get(data, 'title')
         media_id = utils.try_get(data, 'id')
         if whitelist_ids is not None and media_id not in whitelist_ids:
@@ -733,8 +732,7 @@ class SRGSSR:
                 if subtitle_list:
                     list_item.setSubtitles(subtitle_list)
                 else:
-                    self.log(
-                        'No WEBVTT subtitles found for video id %s.' % vid)
+                    self.log(f'No WEBVTT subtitles found for video id {vid}.')
 
         # TODO:
         # Prefer urn over vid as it contains already all data
@@ -836,11 +834,11 @@ class SRGSSR:
         date_string -- a string representing date in the form %d-%m-%Y,
                        e.g. 12-03-2017
         """
-        self.log('build_date_menu, date_string = %s' % date_string)
+        self.log(f'build_date_menu, date_string = {date_string}')
 
         # API v3 use the date in sortable format, i.e. year first
         elems = date_string.split('-')
-        query = 'videos-by-date/%s-%s-%s' % (elems[2], elems[1], elems[0])
+        query = f'videos-by-date/{elems[2]}-{elems[1]}-{elems[0]}'
         return self.build_menu_apiv3(query)
 
     def build_search_menu(self):
@@ -899,8 +897,8 @@ class SRGSSR:
         page_hash  -- the page hash when coming from a previous page
                       (default: '')
         """
-        self.log(('build_search_media_menu, mode = %s, name = %s, page = %s'
-                  ', page_hash = %s') % (mode, name, page, page_hash))
+        self.log(f'build_search_media_menu, mode = {mode}, name = {name}, \
+            page = {page}, page_hash = {page_hash}')
         media_type = 'video'
         if name:
             # `name` is provided by `next_page` folder or
@@ -910,7 +908,7 @@ class SRGSSR:
                 # `name` is provided by previously performed search, so it
                 # needs to be processed first
                 query_string = quote_plus(query_string)
-                query = 'search/media?searchTerm=' + query_string
+                query = f'search/media?searchTerm={query_string}'
         else:
             dialog = xbmcgui.Dialog()
             query_string = dialog.input(LANGUAGE(30115))
@@ -919,7 +917,7 @@ class SRGSSR:
                 return
             self.write_search(RECENT_MEDIA_SEARCHES_FILENAME, query_string)
             query_string = quote_plus(query_string)
-            query = 'search/media?searchTerm=' + query_string
+            query = f'search/media?searchTerm={query_string}'
 
         query = f'{query}&mediaType={media_type}&includeAggregations=false'
         cursor = page_hash if page_hash else ''
@@ -932,12 +930,12 @@ class SRGSSR:
         Keyword arguments:
         url -- a given stream URL
         """
-        self.log('get_auth_url, url = %s' % url)
+        self.log(f'get_auth_url, url = {url}')
         spl = urlps(url).path.split('/')
         token = json.loads(
             self.open_url(
-                'http://tp.srgssr.ch/akahd/token?acl=/%s/%s/*' %
-                (spl[1], spl[2]), use_cache=False)) or {}
+                f'http://tp.srgssr.ch/akahd/token?acl=/{spl[1]}/{spl[2]}/*',
+                use_cache=False)) or {}
         auth_params = token.get('token', {}).get('authparams')
         if auth_params:
             url += ('?' if '?' not in url else '&') + auth_params
@@ -1014,7 +1012,7 @@ class SRGSSR:
         stream_url = stream_urls['HD'] if (
             stream_urls['HD'] and self.prefer_hd)\
             or not stream_urls['SD'] else stream_urls['SD']
-        self.log('play_video, stream_url = %s' % stream_url)
+        self.log(f'play_video, stream_url = {stream_url}')
 
         auth_url = self.get_auth_url(stream_url)
 
@@ -1053,7 +1051,7 @@ class SRGSSR:
                     parsed_url.path, parsed_url.params,
                     new_query, parsed_url.fragment)
                 auth_url = surl_result.geturl()
-        self.log('play_video, auth_url = %s' % auth_url)
+        self.log(f'play_video, auth_url = {auth_url}')
         title = utils.try_get(json_response, ['episode', 'title'], str, urn)
         play_item = xbmcgui.ListItem(title, path=auth_url)
         if self.subtitles:
@@ -1316,8 +1314,7 @@ class SRGSSR:
             live_json = json.loads(self.open_url(api_url))
             entry = utils.try_get(live_json, 0, data_type=dict, default={})
             if not entry:
-                self.log('build_live_menu: No entry found '
-                         'for live id %s.' % lid)
+                self.log('build_live_menu: No entry found for live id {lid}.')
                 continue
             if utils.try_get(entry, 'streamType') == 'noStream':
                 continue
