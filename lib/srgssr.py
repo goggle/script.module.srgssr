@@ -19,17 +19,16 @@
 # along with script.module.srgssr.
 # If not, see <http://www.gnu.org/licenses/>.
 
+from urllib.parse import quote_plus, parse_qsl, ParseResult
+from urllib.parse import urlparse as urlps
+
 import os
 import sys
 import re
 import traceback
-
 import datetime
 import json
 import requests
-
-from urllib.parse import quote_plus, parse_qsl, ParseResult
-from urllib.parse import urlparse as urlps
 
 import xbmc
 import xbmcgui
