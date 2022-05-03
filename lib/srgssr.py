@@ -465,14 +465,17 @@ class SRGSSR:
         """
         Builds the homepage menu.
         """
-        self.build_menu_from_page(self.playtv_url)
+        self.build_menu_from_page(self.playtv_url,
+            ('initialData', 'pacPageConfigs', 'videoHomeSections'))
 
-    def build_menu_from_page(self, url):
+    def build_menu_from_page(self, url, path):
         """
         Builds a menu by extracting some content directly from a website.
 
         Keyword arguments:
         url     -- the url of the website
+        path    -- the path to the relevant data in the json (as tuple
+                   or list of strings)
         """
         html = self.open_url(url)
         m = re.search(self.data_regex, html)
@@ -485,9 +488,7 @@ class SRGSSR:
         except Exception:
             self.log('build_menu_from_page: Invalid json')
             return
-        data = utils.try_get(
-            js, ('initialData', 'pacPageConfigs', 'videoHomeSections'),
-            list, [])
+        data = utils.try_get(js, path, list, [])
         if not data:
             self.log('build_menu_from_page: Could not find any data in json')
         for elem in data:
