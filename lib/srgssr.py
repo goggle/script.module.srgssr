@@ -240,7 +240,7 @@ class SRGSSR:
                 'identifier': 'Topics',
                 'name': self.plugin_language(30058),
                 'mode': 13,
-                'displayItem': False,  # not (yet) supported
+                'displayItem': self.get_boolean_setting('Topics'),
                 'icon': self.icon,
             }, {
                 # Most searched TV shows
@@ -465,8 +465,8 @@ class SRGSSR:
         """
         Builds the homepage menu.
         """
-        self.build_menu_from_page(self.playtv_url,
-            ('initialData', 'pacPageConfigs', 'videoHomeSections'))
+        self.build_menu_from_page(self.playtv_url, (
+            'initialData', 'pacPageConfigs', 'videoHomeSections'))
 
     def build_menu_from_page(self, url, path):
         """
@@ -702,7 +702,9 @@ class SRGSSR:
             self.build_menu_apiv3(f'videos-by-show-id?showId={id}')
         elif 'video' in urn:
             self.build_episode_menu(id)
-        # TODO: Add 'topic'
+        elif 'topic' in urn:
+            self.build_menu_from_page(self.playtv_url, (
+                'initialData', 'pacPageConfigs', 'topicSections', urn))
 
     def build_entry(self, json_entry, is_folder=False, audio=False,
                     fanart=None, urn=None, show_image_url=None,
