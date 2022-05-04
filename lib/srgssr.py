@@ -505,7 +505,6 @@ class SRGSSR:
                 id = elem['id']
                 section_type = elem['sectionType']
                 title = utils.try_get(elem, ('representation', 'title'))
-                page = 1
                 # TODO: Are there more section types to consider?
                 # there is 'MediaSectionWithShow'
                 if section_type in ('MediaSection', 'ShowSection'):
@@ -514,9 +513,6 @@ class SRGSSR:
                                 elem, ('representation', 'name')
                             ) == 'HeroStage':
                         title = self.language(30053)
-                        # NOTE: Accesing the next page fails for this type.
-                        # So do not generate a next page button:
-                        page = 0
                     if not title:
                         continue
                     list_item = xbmcgui.ListItem(label=title)
@@ -528,7 +524,7 @@ class SRGSSR:
                         name = f'media-section?sectionId={id}'
                     elif section_type == 'ShowSection':
                         name = f'show-section?sectionId={id}'
-                    url = self.build_url(mode=1000, name=name, page=page)
+                    url = self.build_url(mode=1000, name=name, page=1)
                     xbmcplugin.addDirectoryItem(
                         self.handle, url, list_item, isFolder=True)
             except Exception:
