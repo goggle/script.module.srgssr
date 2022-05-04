@@ -491,6 +491,7 @@ class SRGSSR:
         data = utils.try_get(js, path, list, [])
         if not data:
             self.log('build_menu_from_page: Could not find any data in json')
+            return
         for elem in data:
             try:
                 id = elem['id']
