@@ -106,3 +106,15 @@ msgstr "Audios récemment recherchées"
 msgctxt "#30118"
 msgid "Recently searched shows"
 msgstr "Émissions récemment recherchées"
+
+msgctxt "#30500"
+msgid "Playback not supported"
+msgstr "La lecture n'est pas prise en charge"
+
+msgctxt "#30501"
+msgid "Playback for item"
+msgstr "La lecture de l'élément"
+
+msgctxt "#30502"
+msgid "not supported"
+msgstr "n'est pas prise en charge"

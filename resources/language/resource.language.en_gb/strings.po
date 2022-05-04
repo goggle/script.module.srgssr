@@ -106,3 +106,15 @@ msgstr ""
 msgctxt "#30118"
 msgid "Recently searched shows"
 msgstr ""
+
+msgctxt "#30500"
+msgid "Playback not supported"
+msgstr ""
+
+msgctxt "#30501"
+msgid "Playback for item"
+msgstr ""
+
+msgctxt "#30502"
+msgid "not supported"
+msgstr ""

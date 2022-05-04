@@ -688,8 +688,21 @@ class SRGSSR:
             'banner': show_image_url or image_url,
         })
         url = self.build_url(mode=100, name=urn)
+        is_folder = True
+
+        # Prevent upcoming live events from being played:
+        if 'swisstxt' in urn:
+            url = self.build_url(mode=500, name=urn)
+            is_folder = False
+
         xbmcplugin.addDirectoryItem(
-            self.handle, url, list_item, isFolder=True)
+            self.handle, url, list_item, isFolder=is_folder)
+
+    def playback_not_supported_dialog(self, urn):
+        heading = self.language(30500)
+        message = self.language(30501) + f' {urn} ' + self.language(30502)
+        dialog = xbmcgui.Dialog()
+        dialog.notification(heading, message)
 
     def build_menu_by_urn(self, urn):
         """
