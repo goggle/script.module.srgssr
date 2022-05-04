@@ -388,6 +388,14 @@ class SRGSSR:
         if cursor:
             if page == 0 or page == '0':
                 return
+
+            # Next page urls containing the string 'urns=' do not work
+            # properly. So in this case prevent the next page button from
+            # being created. Note that might lead to not having a next
+            # page butten where there should be one.
+            if 'urns=' in cursor:
+                return
+
             if page:
                 url = self.build_url(
                     mode=mode, name=queries, page=int(page)+1,
