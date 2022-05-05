@@ -347,6 +347,7 @@ class SRGSSR:
                 data = json.loads(self.open_url(self.apiv3_url + query))
                 if data:
                     data = utils.try_get(data, ['data', 'data'], list, []) or \
+                        utils.try_get(data, ['data', 'medias'], list, []) or \
                         utils.try_get(data, ['data', 'results'], list, []) or \
                         utils.try_get(data, 'data', list, [])
                     for item in data:
@@ -379,6 +380,7 @@ class SRGSSR:
             return
 
         items = utils.try_get(data, 'data', list, []) or \
+            utils.try_get(data, 'medias', list, []) or \
             utils.try_get(data, 'results', list, []) or data
 
         for item in items:
@@ -505,9 +507,8 @@ class SRGSSR:
                 id = elem['id']
                 section_type = elem['sectionType']
                 title = utils.try_get(elem, ('representation', 'title'))
-                # TODO: Are there more section types to consider?
-                # there is 'MediaSectionWithShow'
-                if section_type in ('MediaSection', 'ShowSection'):
+                if section_type in ('MediaSection', 'ShowSection',
+                                    'MediaSectionWithShow'):
                     if section_type == 'MediaSection' and not title and \
                             utils.try_get(
                                 elem, ('representation', 'name')
@@ -524,6 +525,8 @@ class SRGSSR:
                         name = f'media-section?sectionId={id}'
                     elif section_type == 'ShowSection':
                         name = f'show-section?sectionId={id}'
+                    elif section_type == 'MediaSectionWithShow':
+                        name = f'media-section-with-show?sectionId={id}'
                     url = self.build_url(mode=1000, name=name, page=1)
                     xbmcplugin.addDirectoryItem(
                         self.handle, url, list_item, isFolder=True)
