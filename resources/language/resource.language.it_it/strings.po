@@ -15,6 +15,10 @@ msgstr ""
 "Language: it\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgctxt "#30053"
+msgid "Recommendations"
+msgstr "Consigli"
+
 msgctxt "#30058"
 msgid "Today"
 msgstr "Oggi"
@@ -102,3 +106,15 @@ msgstr "Audios cercato di recente"
 msgctxt "#30118"
 msgid "Recently searched shows"
 msgstr "Show cercato di recente"
+
+msgctxt "#30500"
+msgid "Playback not supported"
+msgstr "Riproduzione non supportata"
+
+msgctxt "#30501"
+msgid "Playback for item"
+msgstr "Riproduzione per l'elemento"
+
+msgctxt "#30502"
+msgid "not supported"
+msgstr "non supportata"
