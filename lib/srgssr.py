@@ -287,11 +287,11 @@ class SRGSSR:
                 'icon': self.icon,
             }, {
                 # YouTube
-                'identifier': '%s_YouTube' % self.bu.upper(),
+                'identifier': f'{self.bu.upper()}_YouTube',
                 'name': self.plugin_language(30074),
                 'mode': 30,
                 'displayItem': self.get_boolean_setting(
-                    '%s_YouTube' % self.bu.upper()),
+                    f'{self.bu.upper()}_YouTube'),
                 'icon': self.get_youtube_icon(),
             }
         ]
@@ -553,9 +553,8 @@ class SRGSSR:
         """
         self.log(f'build_episode_menu, video_id = {video_id}')
         content_type = 'audio' if audio else 'video'
-        json_url = ('https://il.srgssr.ch/integrationlayer/2.0/%s/'
-                    'mediaComposition/%s/%s.json') % (self.bu, content_type,
-                                                      video_id)
+        json_url = f'https://il.srgssr.ch/integrationlayer/2.0/{self.bu}/' \
+            f'mediaComposition/{content_type}/{video_id}.json'
         self.log(f'build_episode_menu. Open URL {json_url}')
         try:
             json_response = json.loads(self.open_url(json_url))
@@ -1253,8 +1252,8 @@ class SRGSSR:
                 try:
                     return [entry['id'] for entry in json_file]
                 except KeyError:
-                    self.log('Unexpected file structure for %s.' %
-                             FAVOURITE_SHOWS_FILENAME)
+                    self.log('Unexpected file structure '
+                             f'for {FAVOURITE_SHOWS_FILENAME}.')
                     return []
         except (IOError, TypeError):
             return []
@@ -1285,8 +1284,7 @@ class SRGSSR:
             try:
                 return[entry['search'] for entry in json_file]
             except KeyError:
-                self.log('Unexpected file structure for %s.' %
-                         filename)
+                self.log(f'Unexpected file structure for {filename}.')
                 return []
         except (IOError, TypeError):
             return []
@@ -1383,7 +1381,7 @@ class SRGSSR:
         live_ids = get_live_ids()
         for lid in live_ids:
             api_url = ('https://event.api.swisstxt.ch/v1/events/'
-                       '%s/byEventItemId/?eids=%s') % (self.bu, lid)
+                       f'{self.bu}/byEventItemId/?eids={lid}')
             live_json = json.loads(self.open_url(api_url))
             entry = utils.try_get(live_json, 0, data_type=dict, default={})
             if not entry:
