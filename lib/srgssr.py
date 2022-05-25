@@ -533,7 +533,7 @@ class SRGSSR:
             except Exception:
                 pass
 
-    def build_episode_menu(self, video_id, include_segments=True,
+    def build_episode_menu(self, video_id_or_urn, include_segments=True,
                            segment_option=False, audio=False):
         """
         Builds a list entry for a episode by a given video id.
@@ -542,7 +542,7 @@ class SRGSSR:
         entry for the segment will be created.
 
         Keyword arguments:
-        video_id         -- the id of the video
+        video_id_or_urn  -- the video id or the urn
         include_segments -- indicates if the segments (if available) of the
                             video should be included in the list
                             (default: True)
@@ -551,25 +551,30 @@ class SRGSSR:
         audio            -- boolean value to indicate if the episode is a
                             radio show (default: False)
         """
-        self.log(f'build_episode_menu, video_id = {video_id}')
+        self.log(f'build_episode_menu, video_id_or_urn = {video_id_or_urn}')
         content_type = 'audio' if audio else 'video'
-        json_url = f'https://il.srgssr.ch/integrationlayer/2.0/{self.bu}/' \
-            f'mediaComposition/{content_type}/{video_id}.json'
+        if ':' in video_id_or_urn:
+            json_url = 'https://il.srgssr.ch/integrationlayer/2.0/' \
+                       f'mediaComposition/byUrn/{video_id_or_urn}.json'
+            video_id = video_id_or_urn.split(':')[-1]
+        else:
+            json_url = f'https://il.srgssr.ch/integrationlayer/2.0/{self.bu}' \
+                       f'/mediaComposition/{content_type}/{video_id_or_urn}' \
+                        '.json'
+            video_id = video_id_or_urn
         self.log(f'build_episode_menu. Open URL {json_url}')
         try:
             json_response = json.loads(self.open_url(json_url))
         except Exception:
-            self.log(f'build_episode_menu: Cannot open json for {video_id}.')
+            self.log(
+                f'build_episode_menu: Cannot open json for {video_id_or_urn}.')
             return
 
         chapter_urn = utils.try_get(json_response, 'chapterUrn')
         segment_urn = utils.try_get(json_response, 'segmentUrn')
 
-        id_regex = r'[a-z]+:[a-z]+:[a-z]+:(?P<id>.+)'
-        match_chapter_id = re.match(id_regex, chapter_urn)
-        match_segment_id = re.match(id_regex, segment_urn)
-        chapter_id = match_chapter_id.group('id') if match_chapter_id else None
-        segment_id = match_segment_id.group('id') if match_segment_id else None
+        chapter_id = chapter_urn.split(':')[-1] if chapter_urn else None
+        segment_id = segment_urn.split(':')[-1] if segment_urn else None
 
         if not chapter_id:
             self.log(f'build_episode_menu: No valid chapter URN \
@@ -594,6 +599,7 @@ class SRGSSR:
                 for video_id {video_id}')
             return
 
+        # TODO: Simplify
         json_segment_list = utils.try_get(
             json_chapter, 'segmentList', data_type=list, default=[])
         if video_id == chapter_id:
@@ -697,9 +703,9 @@ class SRGSSR:
         is_folder = True
 
         # Prevent upcoming live events from being played:
-        if 'swisstxt' in urn:
-            url = self.build_url(mode=500, name=urn)
-            is_folder = False
+        # if 'swisstxt' in urn:
+        #     url = self.build_url(mode=500, name=urn)
+        #     is_folder = False
 
         xbmcplugin.addDirectoryItem(
             self.handle, url, list_item, isFolder=is_folder)
@@ -720,6 +726,9 @@ class SRGSSR:
         id = urn.split(':')[-1]
         if 'show' in urn:
             self.build_menu_apiv3(f'videos-by-show-id?showId={id}')
+        elif 'swisstxt' in urn:
+            # self.build_menu_apiv3(f'video?urn={urn}')
+            self.build_episode_menu(urn)
         elif 'video' in urn:
             self.build_episode_menu(id)
         elif 'topic' in urn:
@@ -817,7 +826,11 @@ class SRGSSR:
             url = self.build_url(mode=21, name=name)
         else:
             list_item.setProperty('IsPlayable', 'true')
-            url = self.build_url(mode=50, name=name)
+            # TODO: Simplify this, use URN instead of video id everywhere
+            if 'swisstxt' in urn:
+                url = self.build_url(mode=50, name=urn)
+            else:
+                url = self.build_url(mode=50, name=name)
         xbmcplugin.addDirectoryItem(
             self.handle, url, list_item, isFolder=is_folder)
 
