@@ -205,57 +205,52 @@ class SRGSSR:
                         of the menus to display.
         """
         self.log('build_main_menu')
+
+        def display_item(item):
+            return item in identifiers and self.get_boolean_setting(item)
+
         main_menu_list = [
             {
                 # All shows
                 'identifier': 'All_Shows',
                 'name': self.plugin_language(30050),
                 'mode': 10,
-                'displayItem': self.get_boolean_setting('All_Shows'),
+                'displayItem': display_item('All_Shows'),
                 'icon': self.icon,
             }, {
                 # Favourite shows
                 'identifier': 'Favourite_Shows',
                 'name': self.plugin_language(30051),
                 'mode': 11,
-                'displayItem': self.get_boolean_setting('Favourite_Shows'),
+                'displayItem': display_item('Favourite_Shows'),
                 'icon': self.icon,
             }, {
                 # Newest favourite shows
                 'identifier': 'Newest_Favourite_Shows',
                 'name': self.plugin_language(30052),
                 'mode': 12,
-                'displayItem': self.get_boolean_setting(
-                    'Newest_Favourite_Shows'),
-                'icon': self.icon,
-            }, {
-                # Recommendations
-                'identifier': 'Recommendations',
-                'name': self.plugin_language(30053),
-                'mode': 16,
-                'displayItem': self.get_boolean_setting('Recommendations'),
+                'displayItem': display_item('Newest_Favourite_Shows'),
                 'icon': self.icon,
             }, {
                 # Topics
                 'identifier': 'Topics',
                 'name': self.plugin_language(30058),
                 'mode': 13,
-                'displayItem': self.get_boolean_setting('Topics'),
+                'displayItem': display_item('Topics'),
                 'icon': self.icon,
             }, {
                 # Most searched TV shows
                 'identifier': 'Most_Searched_TV_Shows',
                 'name': self.plugin_language(30059),
                 'mode': 14,
-                'displayItem': self.get_boolean_setting(
-                    'Most_Searched_TV_Shows'),
+                'displayItem': display_item('Most_Searched_TV_Shows'),
                 'icon': self.icon,
             }, {
                 # Shows by date
                 'identifier': 'Shows_By_Date',
                 'name': self.plugin_language(30057),
                 'mode': 17,
-                'displayItem': self.get_boolean_setting('Shows_By_Date'),
+                'displayItem': display_item('Shows_By_Date'),
                 'icon': self.icon,
             }, {
                 # Live TV
@@ -276,22 +271,21 @@ class SRGSSR:
                 'identifier': 'Search',
                 'name': self.plugin_language(30085),
                 'mode': 27,
-                'displayItem': self.get_boolean_setting('Search'),
+                'displayItem': display_item('Search'),
                 'icon': self.icon,
             }, {
                 # Homepage
                 'identifier': 'Homepage',
                 'name': self.plugin_language(30060),
                 'mode': 200,
-                'displayItem': self.get_boolean_setting('Homepage'),
+                'displayItem': display_item('Homepage'),
                 'icon': self.icon,
             }, {
                 # YouTube
                 'identifier': f'{self.bu.upper()}_YouTube',
                 'name': self.plugin_language(30074),
                 'mode': 30,
-                'displayItem': self.get_boolean_setting(
-                    f'{self.bu.upper()}_YouTube'),
+                'displayItem': display_item(f'{self.bu.upper()}_YouTube'),
                 'icon': self.get_youtube_icon(),
             }
         ]
