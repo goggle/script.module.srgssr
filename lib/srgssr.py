@@ -727,8 +727,9 @@ class SRGSSR:
         if 'show' in urn:
             self.build_menu_apiv3(f'videos-by-show-id?showId={id}')
         elif 'swisstxt' in urn:
-            # self.build_menu_apiv3(f'video?urn={urn}')
-            self.build_episode_menu(urn)
+            # Do not include segments for livestreams,
+            # they fail to play.
+            self.build_episode_menu(urn, include_segments=False)
         elif 'video' in urn:
             self.build_episode_menu(id)
         elif 'topic' in urn:
