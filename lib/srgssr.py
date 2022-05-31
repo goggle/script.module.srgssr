@@ -527,7 +527,7 @@ class SRGSSR:
             except Exception:
                 pass
 
-    def build_episode_menu(self, video_id, include_segments=True,
+    def build_episode_menu(self, video_id_or_urn, include_segments=True,
                            segment_option=False, audio=False):
         """
         Builds a list entry for a episode by a given video id.
@@ -536,7 +536,7 @@ class SRGSSR:
         entry for the segment will be created.
 
         Keyword arguments:
-        video_id         -- the id of the video
+        video_id_or_urn  -- the video id or the urn
         include_segments -- indicates if the segments (if available) of the
                             video should be included in the list
                             (default: True)
@@ -545,25 +545,30 @@ class SRGSSR:
         audio            -- boolean value to indicate if the episode is a
                             radio show (default: False)
         """
-        self.log(f'build_episode_menu, video_id = {video_id}')
+        self.log(f'build_episode_menu, video_id_or_urn = {video_id_or_urn}')
         content_type = 'audio' if audio else 'video'
-        json_url = f'https://il.srgssr.ch/integrationlayer/2.0/{self.bu}/' \
-            f'mediaComposition/{content_type}/{video_id}.json'
+        if ':' in video_id_or_urn:
+            json_url = 'https://il.srgssr.ch/integrationlayer/2.0/' \
+                       f'mediaComposition/byUrn/{video_id_or_urn}.json'
+            video_id = video_id_or_urn.split(':')[-1]
+        else:
+            json_url = f'https://il.srgssr.ch/integrationlayer/2.0/{self.bu}' \
+                       f'/mediaComposition/{content_type}/{video_id_or_urn}' \
+                        '.json'
+            video_id = video_id_or_urn
         self.log(f'build_episode_menu. Open URL {json_url}')
         try:
             json_response = json.loads(self.open_url(json_url))
         except Exception:
-            self.log(f'build_episode_menu: Cannot open json for {video_id}.')
+            self.log(
+                f'build_episode_menu: Cannot open json for {video_id_or_urn}.')
             return
 
         chapter_urn = utils.try_get(json_response, 'chapterUrn')
         segment_urn = utils.try_get(json_response, 'segmentUrn')
 
-        id_regex = r'[a-z]+:[a-z]+:[a-z]+:(?P<id>.+)'
-        match_chapter_id = re.match(id_regex, chapter_urn)
-        match_segment_id = re.match(id_regex, segment_urn)
-        chapter_id = match_chapter_id.group('id') if match_chapter_id else None
-        segment_id = match_segment_id.group('id') if match_segment_id else None
+        chapter_id = chapter_urn.split(':')[-1] if chapter_urn else None
+        segment_id = segment_urn.split(':')[-1] if segment_urn else None
 
         if not chapter_id:
             self.log(f'build_episode_menu: No valid chapter URN \
@@ -588,6 +593,7 @@ class SRGSSR:
                 for video_id {video_id}')
             return
 
+        # TODO: Simplify
         json_segment_list = utils.try_get(
             json_chapter, 'segmentList', data_type=list, default=[])
         if video_id == chapter_id:
@@ -690,19 +696,8 @@ class SRGSSR:
         url = self.build_url(mode=100, name=urn)
         is_folder = True
 
-        # Prevent upcoming live events from being played:
-        if 'swisstxt' in urn:
-            url = self.build_url(mode=500, name=urn)
-            is_folder = False
-
         xbmcplugin.addDirectoryItem(
             self.handle, url, list_item, isFolder=is_folder)
-
-    def playback_not_supported_dialog(self, urn):
-        heading = self.language(30500)
-        message = self.language(30501) + f' {urn} ' + self.language(30502)
-        dialog = xbmcgui.Dialog()
-        dialog.notification(heading, message)
 
     def build_menu_by_urn(self, urn):
         """
@@ -714,6 +709,10 @@ class SRGSSR:
         id = urn.split(':')[-1]
         if 'show' in urn:
             self.build_menu_apiv3(f'videos-by-show-id?showId={id}')
+        elif 'swisstxt' in urn:
+            # Do not include segments for livestreams,
+            # they fail to play.
+            self.build_episode_menu(urn, include_segments=False)
         elif 'video' in urn:
             self.build_episode_menu(id)
         elif 'topic' in urn:
@@ -811,7 +810,11 @@ class SRGSSR:
             url = self.build_url(mode=21, name=name)
         else:
             list_item.setProperty('IsPlayable', 'true')
-            url = self.build_url(mode=50, name=name)
+            # TODO: Simplify this, use URN instead of video id everywhere
+            if 'swisstxt' in urn:
+                url = self.build_url(mode=50, name=urn)
+            else:
+                url = self.build_url(mode=50, name=name)
         xbmcplugin.addDirectoryItem(
             self.handle, url, list_item, isFolder=is_folder)
 
@@ -1328,74 +1331,6 @@ class SRGSSR:
     #                      'for element %s' % urn)
     #             continue
     #         self.build_entry(json_entry)
-
-    def build_live_menu(self, extract_srf3=False):
-        """
-        Builds the menu listing the currently available livestreams.
-        """
-        def get_live_ids():
-            """
-            Downloads the main webpage and scrapes it for
-            possible livestreams. If some live events were found, a list
-            of live ids will be returned, otherwise an empty list.
-            """
-            live_ids = []
-            webpage = self.open_url(self.host_url, use_cache=False)
-            event_id_regex = r'(?:data-sport-id=\"|eventId=)(?P<live_id>\d+)'
-            try:
-                for match in re.finditer(event_id_regex, webpage):
-                    live_ids.append(match.group('live_id'))
-            except StopIteration:
-                pass
-            return live_ids
-
-        def get_srf3_live_ids():
-            """
-            Returns a list of Radio SRF 3 video streams.
-            """
-            url = 'https://www.srf.ch/radio-srf-3'
-            webpage = self.open_url(url, use_cache=False)
-            video_id_regex = r'''(?x)
-                                   popupvideoplayer\?id=
-                                   (?P<video_id>
-                                       [a-f0-9]{8}-
-                                       [a-f0-9]{4}-
-                                       [a-f0-9]{4}-
-                                       [a-f0-9]{4}-
-                                       [a-f0-9]{12}
-                                    )
-                                '''
-            live_ids = []
-            try:
-                for match in re.finditer(video_id_regex, webpage):
-                    live_ids.append(match.group('video_id'))
-            except StopIteration:
-                pass
-            return live_ids
-        live_ids = get_live_ids()
-        for lid in live_ids:
-            api_url = ('https://event.api.swisstxt.ch/v1/events/'
-                       f'{self.bu}/byEventItemId/?eids={lid}')
-            live_json = json.loads(self.open_url(api_url))
-            entry = utils.try_get(live_json, 0, data_type=dict, default={})
-            if not entry:
-                self.log('build_live_menu: No entry found for live id {lid}.')
-                continue
-            if utils.try_get(entry, 'streamType') == 'noStream':
-                continue
-            title = utils.try_get(entry, 'title')
-            stream_url = utils.try_get(entry, 'hls')
-            image = utils.try_get(entry, 'imageUrl')
-            item = xbmcgui.ListItem(label=title)
-            item.setProperty('IsPlayable', 'true')
-            item.setArt({'thumb': image})
-            purl = self.build_url(mode=51, name=stream_url)
-            xbmcplugin.addDirectoryItem(
-                self.handle, purl, item, isFolder=False)
-        if extract_srf3:
-            srf3_ids = get_srf3_live_ids()
-            for vid in srf3_ids:
-                self.build_episode_menu(vid, include_segments=False)
 
     def _read_youtube_channels(self, fname):
         """
