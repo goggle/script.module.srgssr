@@ -1010,20 +1010,18 @@ class SRGSSR:
             url += ('?' if '?' not in url else '&') + auth_params
         return url
 
-    def play_video(self, media_id_or_urn, audio=False):
+    def play_video(self, media_id_or_urn):
         """
         Gets the stream information starts to play it.
 
         Keyword arguments:
         media_id_or_urn -- the urn or id of the media to play
-        audio           -- boolean value to indicate if the content is
-                           audio (default: False)
         """
         if media_id_or_urn.startswith('urn:'):
             urn = media_id_or_urn
             media_id = media_id_or_urn.split(':')[-1]
         else:
-            media_type = 'audio' if audio else 'video'
+            media_type = 'video'
             urn = 'urn:' + self.bu + ':' + media_type + ':' + media_id_or_urn
             media_id = media_id_or_urn
         self.log('play_video, urn = ' + urn + ', media_id = ' + media_id)
@@ -1052,20 +1050,6 @@ class SRGSSR:
             'SD': '',
             'HD': '',
         }
-
-        if audio:
-            candidates = [res for res in resource_list if utils.try_get(
-                res, 'protocol') in ('HTTP', 'HTTPS', 'HTTP-MP3-STREAM')]
-            for candi in candidates:
-                if utils.try_get(candi, 'quality') in ('HD', 'HQ'):
-                    stream_url = candi['url']
-                    break
-            else:
-                stream_url = candidates[0]['url']
-
-            play_item = xbmcgui.ListItem(media_id, path=stream_url)
-            xbmcplugin.setResolvedUrl(self.handle, True, play_item)
-            return
 
         mf_type = 'hls'
         for resource in resource_list:
