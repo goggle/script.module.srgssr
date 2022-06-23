@@ -37,6 +37,7 @@ import xbmcplugin
 import xbmcaddon
 import xbmcvfs
 
+import inputstreamhelper
 import simplecache
 import youtube_channels
 
@@ -1021,6 +1022,7 @@ class SRGSSR:
             urn = media_id_or_urn
             media_id = media_id_or_urn.split(':')[-1]
         else:
+            # TODO: Could fail for livestreams
             media_type = 'video'
             urn = 'urn:' + self.bu + ':' + media_type + ':' + media_id_or_urn
             media_id = media_id_or_urn
@@ -1029,6 +1031,8 @@ class SRGSSR:
         detail_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
                       'mediaComposition/byUrn/' + urn)
         json_response = json.loads(self.open_url(detail_url))
+        title = utils.try_get(json_response, ['episode', 'title'], str, urn)
+
         chapter_list = utils.try_get(
             json_response, 'chapterList', data_type=list, default=[])
         if not chapter_list:
@@ -1052,11 +1056,20 @@ class SRGSSR:
         }
 
         mf_type = 'hls'
+        drm = False
         for resource in resource_list:
+            if utils.try_get(resource, 'drmList', data_type=list, default=[]):
+                drm = True
+                break
+
             if utils.try_get(resource, 'protocol') == 'HLS':
                 for key in ('SD', 'HD'):
                     if utils.try_get(resource, 'quality') == key:
                         stream_urls[key] = utils.try_get(resource, 'url')
+
+        if drm:
+            self.play_drm(urn, title, resource_list)
+            return
 
         if not stream_urls['SD'] and not stream_urls['HD']:
             self.log('play_video: no stream URL found.')
@@ -1105,7 +1118,6 @@ class SRGSSR:
                     new_query, parsed_url.fragment)
                 auth_url = surl_result.geturl()
         self.log(f'play_video, auth_url = {auth_url}')
-        title = utils.try_get(json_response, ['episode', 'title'], str, urn)
         play_item = xbmcgui.ListItem(title, path=auth_url)
         if self.subtitles:
             subs = self.get_subtitles(stream_url, urn)
@@ -1116,6 +1128,40 @@ class SRGSSR:
         play_item.setProperty('inputstream.adaptive.manifest_type', mf_type)
         play_item.setProperty('IsPlayable', 'true')
 
+        xbmcplugin.setResolvedUrl(self.handle, True, play_item)
+
+    def play_drm(self, urn, title, resource_list):
+        self.log(f'play_drm: urn = {urn}')
+        preferred_quality = 'HD' if self.prefer_hd else 'SD'
+        for resource in resource_list:
+            url = utils.try_get(resource, 'url')
+            quality = utils.try_get(resource, 'quality')
+            lic_url = ''
+            if utils.try_get(resource, 'protocol') == 'DASH':
+                drmlist = utils.try_get(
+                    resource, 'drmList', data_type=list, default=[])
+                for item in drmlist:
+                    if utils.try_get(item, 'type') == 'WIDEVINE':
+                        lic_url = utils.try_get(item, 'licenseUrl')
+            if lic_url and quality == preferred_quality:
+                break
+
+        if not url or not lic_url:
+            self.log('play_drm: No stream found')
+            return
+
+        helper = inputstreamhelper.Helper('mpd', drm='com.widevine.alpha')
+        if not helper.check_inputstream():
+            self.log('play_drm: Unable to setup drm')
+            return
+
+        play_item = xbmcgui.ListItem(title, path=self.get_auth_url(url))
+        ia = 'inputstream.adaptive'
+        play_item.setProperty('inputstream', ia)
+        lic_key = f'{lic_url}|Content-Type=application/octet-stream|R{{SSM}}|'
+        play_item.setProperty(f'{ia}.manifest_type', 'mpd')
+        play_item.setProperty(f'{ia}.license_type', 'com.widevine.alpha')
+        play_item.setProperty(f'{ia}.license_key', lic_key)
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
     def get_subtitles(self, url, name):
