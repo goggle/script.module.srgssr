@@ -1150,7 +1150,9 @@ class SRGSSR:
             self.log('play_drm: No stream found')
             return
 
-        helper = inputstreamhelper.Helper('mpd', drm='com.widevine.alpha')
+        manifest_type = 'mpd'
+        drm = 'com.widevine.alpha'
+        helper = inputstreamhelper.Helper(manifest_type, drm=drm)
         if not helper.check_inputstream():
             self.log('play_drm: Unable to setup drm')
             return
@@ -1159,8 +1161,8 @@ class SRGSSR:
         ia = 'inputstream.adaptive'
         play_item.setProperty('inputstream', ia)
         lic_key = f'{lic_url}|Content-Type=application/octet-stream|R{{SSM}}|'
-        play_item.setProperty(f'{ia}.manifest_type', 'mpd')
-        play_item.setProperty(f'{ia}.license_type', 'com.widevine.alpha')
+        play_item.setProperty(f'{ia}.manifest_type', manifest_type)
+        play_item.setProperty(f'{ia}.license_type', drm)
         play_item.setProperty(f'{ia}.license_key', lic_key)
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
