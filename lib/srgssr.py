@@ -1133,8 +1133,14 @@ class SRGSSR:
     def play_drm(self, urn, title, resource_list):
         self.log(f'play_drm: urn = {urn}')
         preferred_quality = 'HD' if self.prefer_hd else 'SD'
+        resource_data = {
+            'url': '',
+            'lic_url': '',
+        }
         for resource in resource_list:
             url = utils.try_get(resource, 'url')
+            if not url:
+                continue
             quality = utils.try_get(resource, 'quality')
             lic_url = ''
             if utils.try_get(resource, 'protocol') == 'DASH':
@@ -1143,10 +1149,12 @@ class SRGSSR:
                 for item in drmlist:
                     if utils.try_get(item, 'type') == 'WIDEVINE':
                         lic_url = utils.try_get(item, 'licenseUrl')
-            if lic_url and quality == preferred_quality:
+                        resource_data['url'] = url
+                        resource_data['lic_url'] = lic_url
+            if resource_data['lic_url'] and quality == preferred_quality:
                 break
 
-        if not url or not lic_url:
+        if not resource_data['url'] or not resource_data['lic_url']:
             self.log('play_drm: No stream found')
             return
 
@@ -1157,10 +1165,12 @@ class SRGSSR:
             self.log('play_drm: Unable to setup drm')
             return
 
-        play_item = xbmcgui.ListItem(title, path=self.get_auth_url(url))
+        play_item = xbmcgui.ListItem(
+            title, path=self.get_auth_url(resource_data['url']))
         ia = 'inputstream.adaptive'
         play_item.setProperty('inputstream', ia)
-        lic_key = f'{lic_url}|Content-Type=application/octet-stream|R{{SSM}}|'
+        lic_key = f'{resource_data["lic_url"]}|' \
+                  'Content-Type=application/octet-stream|R{SSM}|'
         play_item.setProperty(f'{ia}.manifest_type', manifest_type)
         play_item.setProperty(f'{ia}.license_type', drm)
         play_item.setProperty(f'{ia}.license_key', lic_key)
