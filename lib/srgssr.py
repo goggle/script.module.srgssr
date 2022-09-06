@@ -1321,7 +1321,7 @@ class SRGSSR:
             with open(file_path, 'r') as f:
                 json_file = json.load(f)
             try:
-                return[entry['search'] for entry in json_file]
+                return [entry['search'] for entry in json_file]
             except KeyError:
                 self.log(f'Unexpected file structure for {filename}.')
                 return []
