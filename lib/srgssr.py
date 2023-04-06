@@ -383,7 +383,7 @@ class SRGSSR:
                 item, is_show=is_show, whitelist_ids=whitelist_ids)
 
         if cursor:
-            if page == 0 or page == '0':
+            if page in (0, '0'):
                 return
 
             # Next page urls containing the string 'urns=' do not work
