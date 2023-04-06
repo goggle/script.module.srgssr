@@ -29,7 +29,6 @@ import traceback
 import datetime
 import json
 import requests
-import utils
 
 import xbmc
 import xbmcgui
@@ -41,6 +40,7 @@ import inputstreamhelper
 import simplecache
 import youtube_channels
 
+import utils
 
 ADDON_ID = 'script.module.srgssr'
 REAL_SETTINGS = xbmcaddon.Addon(id=ADDON_ID)
