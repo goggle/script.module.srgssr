@@ -1073,7 +1073,7 @@ class SRGSSR:
         spl = urlps(url).path.split('/')
         token = json.loads(
             self.open_url(
-                f'http://tp.srgssr.ch/akahd/token?acl=/{spl[1]}/{spl[2]}/*',
+                f'https://tp.srgssr.ch/akahd/token?acl=/{spl[1]}/{spl[2]}/*',
                 use_cache=False)) or {}
         auth_params = token.get('token', {}).get('authparams')
         if auth_params:
@@ -1271,7 +1271,7 @@ class SRGSSR:
 
         cap_comps = caption.split(':')
         lang = '.' + cap_comps[1] if len(cap_comps) > 1 else ''
-        sub_url = ('http://' + webvttbaseurl + '/' + cap_comps[0])
+        sub_url = ('https://' + webvttbaseurl + '/' + cap_comps[0])
         self.log('subtitle url: ' + sub_url)
         if not sub_url.endswith('.m3u8'):
             return [sub_url]
