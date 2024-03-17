@@ -106,7 +106,8 @@ class SRGSSR:
 
     def get_youtube_icon(self):
         path = os.path.join(
-            xbmc.translatePath(self.media_uri), 'icon_youtube.png')
+            # https://github.com/xbmc/xbmc/pull/19301
+            xbmcvfs.translatePath(self.media_uri), 'icon_youtube.png')
         if os.path.exists(path):
             return path
         return self.icon
