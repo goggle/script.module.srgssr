@@ -1352,7 +1352,7 @@ class SRGSSR:
         containing these ids.
         An empty list will be returned in case of failure.
         """
-        path = xbmc.translatePath(
+        path = xbmcvfs.translatePath(
             self.real_settings.getAddonInfo('profile'))
         file_path = os.path.join(path, FAVOURITE_SHOWS_FILENAME)
         try:
@@ -1376,7 +1376,7 @@ class SRGSSR:
         show_ids -- a list of show ids (as strings)
         """
         show_ids_dict_list = [{'id': show_id} for show_id in show_ids]
-        path = xbmc.translatePath(
+        path = xbmcvfs.translatePath(
             self.real_settings.getAddonInfo('profile'))
         file_path = os.path.join(path, FAVOURITE_SHOWS_FILENAME)
         if not os.path.exists(path):
@@ -1385,7 +1385,7 @@ class SRGSSR:
             json.dump(show_ids_dict_list, f)
 
     def read_searches(self, filename):
-        path = xbmc.translatePath(self.real_settings.getAddonInfo('profile'))
+        path = xbmcvfs.translatePath(self.real_settings.getAddonInfo('profile'))
         file_path = os.path.join(path, filename)
         try:
             with open(file_path, 'r') as f:
@@ -1408,7 +1408,7 @@ class SRGSSR:
             searches.pop()
         searches.insert(0, name)
         write_dict_list = [{'search': entry} for entry in searches]
-        path = xbmc.translatePath(self.real_settings.getAddonInfo('profile'))
+        path = xbmcvfs.translatePath(self.real_settings.getAddonInfo('profile'))
         file_path = os.path.join(path, filename)
         if not os.path.exists(path):
             os.makedirs(path)
@@ -1452,7 +1452,7 @@ class SRGSSR:
         Keyword arguments:
         fname  -- the path to the file to be read
         """
-        data_file = os.path.join(xbmc.translatePath(self.data_uri), fname)
+        data_file = os.path.join(xbmcvfs.translatePath(self.data_uri), fname)
         with open(data_file, 'r', encoding='utf-8') as f:
             ch_content = json.load(f)
             cids = [elem['channel'] for elem in ch_content.get('channels', [])]
