@@ -1385,7 +1385,8 @@ class SRGSSR:
             json.dump(show_ids_dict_list, f)
 
     def read_searches(self, filename):
-        path = xbmcvfs.translatePath(self.real_settings.getAddonInfo('profile'))
+        path = xbmcvfs.translatePath(
+            self.real_settings.getAddonInfo('profile'))
         file_path = os.path.join(path, filename)
         try:
             with open(file_path, 'r') as f:
@@ -1408,7 +1409,8 @@ class SRGSSR:
             searches.pop()
         searches.insert(0, name)
         write_dict_list = [{'search': entry} for entry in searches]
-        path = xbmcvfs.translatePath(self.real_settings.getAddonInfo('profile'))
+        path = xbmcvfs.translatePath(
+            self.real_settings.getAddonInfo('profile'))
         file_path = os.path.join(path, filename)
         if not os.path.exists(path):
             os.makedirs(path)
