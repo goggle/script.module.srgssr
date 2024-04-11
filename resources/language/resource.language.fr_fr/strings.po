@@ -17,7 +17,7 @@ msgstr ""
 
 msgctxt "#30053"
 msgid "Recommendations"
-msgstr "Recommandations"
+msgstr "Recommendations"
 
 msgctxt "#30058"
 msgid "Today"

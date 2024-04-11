@@ -422,7 +422,7 @@ class SRGSSR:
         shows.
 
         Keyword arguments:
-        favids -- A list of show ids (strings) respresenting the favourite
+        favids -- A list of show ids (strings) representing the favourite
                   shows. If such a list is provided, only the folders for
                   the shows on that list will be build. (default: None)
         """
