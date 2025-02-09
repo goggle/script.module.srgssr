@@ -85,7 +85,7 @@ class SRGSSR:
         self.playtv_url = f'{self.host_url}/play/tv'
         self.apiv3_url = f'{self.host_url}/play/v3/api/{bu}/production/'
         self.data_regex = \
-            r'<script>window.__SSR_VIDEO_DATA__\s*=\s*(.+?)</script>'
+            r'window.__remixContext\s*=\s*(.+?);\s*</script>'
         self.data_uri = f'special://home/addons/{self.addon_id}/resources/data'
         self.media_uri = \
             f'special://home/addons/{self.addon_id}/resources/media'
@@ -189,6 +189,7 @@ class SRGSSR:
                 xbmcgui.Dialog().notification(
                     ADDON_NAME, LANGUAGE(30100), ICON, 4000)
                 return ''
+            response.encoding = 'UTF-8'
             self.cache.set(
                 f'{ADDON_NAME}.open_url, url = {url}',
                 response.text,
@@ -469,8 +470,9 @@ class SRGSSR:
         """
         Builds the homepage menu.
         """
-        self.build_menu_from_page(self.playtv_url, (
-            'initialData', 'pacPageConfigs', 'landingPage', 'sections'))
+        self.build_menu_from_page(
+            self.playtv_url, ('state', 'loaderData', 'play-now', 'initialData',
+                              'pacPageConfigs', 'landingPage', 'sections'))
 
     def build_menu_from_page(self, url, path):
         """
@@ -726,9 +728,10 @@ class SRGSSR:
         elif 'video' in urn:
             self.build_episode_menu(id)
         elif 'topic' in urn:
-            self.build_menu_from_page(self.playtv_url, (
-                'initialData', 'pacPageConfigs', 'topicPages',
-                urn, 'sections'))
+            self.build_menu_from_page(
+                self.playtv_url, ('state', 'loaderData', 'play-now',
+                                  'initialData', 'pacPageConfigs',
+                                  'topicPages', urn, 'sections'))
 
     def build_entry(self, json_entry, is_folder=False, audio=False,
                     fanart=None, urn=None, show_image_url=None,
