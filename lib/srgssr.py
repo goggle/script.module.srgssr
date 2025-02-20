@@ -530,7 +530,7 @@ class SRGSSR:
                 pass
 
     def build_episode_menu(self, video_id_or_urn, include_segments=True,
-                           segment_option=False, audio=False):
+                           segment_option=False):
         """
         Builds a list entry for a episode by a given video id.
         The segment entries for that episode can be included too.
@@ -544,11 +544,9 @@ class SRGSSR:
                             (default: True)
         segment_option   -- Which segment option to use.
                             (default: False)
-        audio            -- boolean value to indicate if the episode is a
-                            radio show (default: False)
         """
         self.log(f'build_episode_menu, video_id_or_urn = {video_id_or_urn}')
-        content_type = 'audio' if audio else 'video'
+        content_type = 'video'
         if ':' in video_id_or_urn:
             json_url = 'https://il.srgssr.ch/integrationlayer/2.0/' \
                        f'mediaComposition/byUrn/{video_id_or_urn}.json'
@@ -605,12 +603,6 @@ class SRGSSR:
                 self.build_entry(
                     json_chapter, show_image_url=show_image_url,
                     show_poster_image_url=show_poster_image_url)
-
-                if audio and chapter_index == 0:
-                    for aid in json_chapter_list[1:]:
-                        self.build_entry(
-                            aid, show_image_url=show_image_url,
-                            show_poster_image_url=show_poster_image_url)
 
                 for segment in json_segment_list:
                     self.build_entry(
@@ -733,7 +725,7 @@ class SRGSSR:
                                   'initialData', 'pacPageConfigs',
                                   'topicPages', urn, 'sections'))
 
-    def build_entry(self, json_entry, is_folder=False, audio=False,
+    def build_entry(self, json_entry, is_folder=False,
                     fanart=None, urn=None, show_image_url=None,
                     show_poster_image_url=None):
         """
@@ -744,8 +736,6 @@ class SRGSSR:
         json_entry              -- the part of the json describing the video
         is_folder               -- indicates if the item is a folder
                                    (default: False)
-        audio                   -- boolean value to indicate if the entry
-                                   contains audio (default: False)
         fanart                  -- fanart to be used instead of default image
         urn                     -- override urn from json_entry
         show_image_url          -- url of the image of the show
@@ -801,17 +791,16 @@ class SRGSSR:
             'banner': show_image_url or image_url,
         })
 
-        if not audio:
-            subs = utils.try_get(
-                json_entry, 'subtitleList', data_type=list, default=[])
-            if subs and self.subtitles:
-                subtitle_list = [
-                    utils.try_get(x, 'url') for x in subs
-                    if utils.try_get(x, 'format') == 'VTT']
-                if subtitle_list:
-                    list_item.setSubtitles(subtitle_list)
-                else:
-                    self.log(f'No WEBVTT subtitles found for video id {vid}.')
+        subs = utils.try_get(
+            json_entry, 'subtitleList', data_type=list, default=[])
+        if subs and self.subtitles:
+            subtitle_list = [
+                utils.try_get(x, 'url') for x in subs
+                if utils.try_get(x, 'format') == 'VTT']
+            if subtitle_list:
+                list_item.setSubtitles(subtitle_list)
+            else:
+                self.log(f'No WEBVTT subtitles found for video id {vid}.')
 
         # TODO:
         # Prefer urn over vid as it contains already all data
