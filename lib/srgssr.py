@@ -546,14 +546,13 @@ class SRGSSR:
                             (default: False)
         """
         self.log(f'build_episode_menu, video_id_or_urn = {video_id_or_urn}')
-        content_type = 'video'
         if ':' in video_id_or_urn:
             json_url = 'https://il.srgssr.ch/integrationlayer/2.0/' \
                        f'mediaComposition/byUrn/{video_id_or_urn}.json'
             video_id = video_id_or_urn.split(':')[-1]
         else:
             json_url = f'https://il.srgssr.ch/integrationlayer/2.0/{self.bu}' \
-                       f'/mediaComposition/{content_type}/{video_id_or_urn}' \
+                       f'/mediaComposition/video/{video_id_or_urn}' \
                         '.json'
             video_id = video_id_or_urn
         self.log(f'build_episode_menu. Open URL {json_url}')
@@ -582,11 +581,9 @@ class SRGSSR:
         json_chapter_list = utils.try_get(
             json_response, 'chapterList', data_type=list, default=[])
         json_chapter = None
-        chapter_index = -1
         for (ind, chapter) in enumerate(json_chapter_list):
             if utils.try_get(chapter, 'id') == chapter_id:
                 json_chapter = chapter
-                chapter_index = ind
                 break
         if not json_chapter:
             self.log(f'build_episode_menu: No chapter ID found \
