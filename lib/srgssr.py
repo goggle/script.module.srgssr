@@ -1402,35 +1402,6 @@ class SRGSSR:
         with open(file_path, 'w') as f:
             json.dump(write_dict_list, f)
 
-    # Live TV is currently not supported due to recently added DRM protection:
-    #
-    # https://www.srf.ch/sendungen/hallosrf/weshalb-funktioniert-der-livestream-auf-srf-ch-nicht-mehr
-    # https://rtsr.ch/digitalrightsmanagement/
-    # https://www.rsi.ch/chi-siamo/mestieri/La-SSR-introduce-la-codifica-digitale-11038056.html
-    #
-    #
-    # def build_tv_menu(self):
-    #     """
-    #     Builds the overview over the TV channels.
-    #     """
-    #     overview_url = '%s/play/tv/live/overview' % self.host_url
-    #     overview_json = json.loads(
-    #         self.open_url(overview_url, use_cache=False))
-    #     urns = [utils.try_get(x, 'urn') for x in utils.try_get(
-    #         overview_json, 'teaser', data_type=list, default=[])
-    #         if utils.try_get(x, 'urn')]
-    #     for urn in urns:
-    #         json_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
-    #                     'mediaComposition/byUrn/%s.json') % urn
-    #         info_json = json.loads(self.open_url(json_url, use_cache=False))
-    #         json_entry = utils.try_get(
-    #             info_json, ('chapterList', 0), data_type=dict, default={})
-    #         if not json_entry:
-    #             self.log('build_tv_menu: Unexpected json structure '
-    #                      'for element %s' % urn)
-    #             continue
-    #         self.build_entry(json_entry)
-
     def _read_youtube_channels(self, fname):
         """
         Reads YouTube channel IDs from a specified file and returns a list
