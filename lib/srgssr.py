@@ -92,7 +92,6 @@ class SRGSSR:
 
         # Plugin options:
         self.debug = self.get_boolean_setting('Enable_Debugging')
-        self.subtitles = self.get_boolean_setting('Extract_Subtitles')
         self.prefer_hd = self.get_boolean_setting('Prefer_HD')
 
         # Delete temporary subtitle files urn*.vtt
@@ -790,7 +789,7 @@ class SRGSSR:
 
         subs = utils.try_get(
             json_entry, 'subtitleList', data_type=list, default=[])
-        if subs and self.subtitles:
+        if subs:
             subtitle_list = [
                 utils.try_get(x, 'url') for x in subs
                 if utils.try_get(x, 'format') == 'VTT']
@@ -1176,10 +1175,9 @@ class SRGSSR:
                 auth_url = surl_result.geturl()
         self.log(f'play_video, auth_url = {auth_url}')
         play_item = xbmcgui.ListItem(title, path=auth_url)
-        if self.subtitles:
-            subs = self.get_subtitles(stream_url, urn)
-            if subs:
-                play_item.setSubtitles(subs)
+        subs = self.get_subtitles(stream_url, urn)
+        if subs:
+            play_item.setSubtitles(subs)
 
         play_item.setProperty('inputstream', 'inputstream.adaptive')
         play_item.setProperty('inputstream.adaptive.manifest_type', mf_type)
