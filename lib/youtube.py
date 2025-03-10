@@ -54,7 +54,7 @@ class YoutubeBuilder:
         cache_identifier = self.srgssr.addon_id + ".youtube_channel_ids"
         channel_ids = self.srgssr.cache.get(cache_identifier)
         if not channel_ids:
-            self.log(
+            self.srgssr.log(
                 "get_youtube_channel_ids: Caching YouTube channel ids."
                 "This log message should not appear too many times."
             )
