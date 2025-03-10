@@ -40,7 +40,8 @@ class YoutubeBuilder:
         Keyword arguments:
         fname  -- the path to the file to be read
         """
-        data_file = os.path.join(xbmcvfs.translatePath(self.srgssr.data_uri), fname)
+        data_file = os.path.join(
+            xbmcvfs.translatePath(self.srgssr.data_uri), fname)
         with open(data_file, 'r', encoding='utf-8') as f:
             ch_content = json.load(f)
             cids = [elem['channel'] for elem in ch_content.get('channels', [])]
@@ -94,8 +95,9 @@ class YoutubeBuilder:
         """
         channel_ids = self.get_youtube_channel_ids()
         youtube_channels.YoutubeChannels(
-            self.handle, channel_ids,
-            self.srgssr.addon_id, self.srgssr.debug).build_channel_overview_menu()
+                self.handle, channel_ids,
+                self.srgssr.addon_id, self.srgssr.debug
+            ).build_channel_overview_menu()
 
     def build_youtube_channel_menu(self, cid, mode, page=1, page_token=''):
         """
@@ -124,7 +126,8 @@ class YoutubeBuilder:
             self.srgssr.addon_id, self.srgssr.debug).build_channel_menu(
                 cid, page_token=page_token)
         if next_page_token:
-            next_item = xbmcgui.ListItem(label='>> ' + self.srgssr.language(30073))
+            next_item = xbmcgui.ListItem(
+                label='>> ' + self.srgssr.language(30073))
             next_url = self.srgssr.build_url(
                 mode=mode, name=cid, page_hash=next_page_token)
             next_item.setProperty('IsPlayable', 'false')
@@ -148,12 +151,13 @@ class YoutubeBuilder:
 
         channel_ids = self.get_youtube_channel_ids()
         next_page = youtube_channels.YoutubeChannels(
-            self.handle, channel_ids,
-            self.srgssr.addon_id, self.srgssr.debug).build_newest_videos(page=page)
+                self.handle, channel_ids,
+                self.srgssr.addon_id, self.srgssr.debug
+            ).build_newest_videos(page=page)
         if next_page:
-            next_item = xbmcgui.ListItem(label='>> ' + self.srgssr.language(30073))
+            next_item = xbmcgui.ListItem(
+                label='>> ' + self.srgssr.language(30073))
             next_url = self.srgssr.build_url(mode=mode, page=next_page)
             next_item.setProperty('IsPlayable', 'false')
             xbmcplugin.addDirectoryItem(
                 self.handle, next_url, next_item, isFolder=True)
-

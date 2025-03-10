@@ -26,7 +26,8 @@ class StorageManager:
     """Manages file I/O operations for the SRGSSR plugin."""
     def __init__(self, srgssr_instance):
         self.srgssr = srgssr_instance
-        self.profile_path = xbmcvfs.translatePath(self.srgssr.real_settings.getAddonInfo('profile'))
+        self.profile_path = xbmcvfs.translatePath(
+            self.srgssr.real_settings.getAddonInfo('profile'))
 
     def read_favourite_show_ids(self):
         """
@@ -43,8 +44,9 @@ class StorageManager:
                 try:
                     return [entry['id'] for entry in json_file]
                 except KeyError:
-                    self.srgssr.log('Unexpected file structure '
-                             f'for {self.srgssr.fname_favourite_shows}.')
+                    self.srgssr.log(
+                        'Unexpected file structure '
+                        f'for {self.srgssr.fname_favourite_shows}.')
                     return []
         except (IOError, TypeError):
             return []
@@ -58,7 +60,8 @@ class StorageManager:
         show_ids -- a list of show ids (as strings)
         """
         show_ids_dict_list = [{'id': show_id} for show_id in show_ids]
-        file_path = os.path.join(self.profile_path, self.srgssr.fname_favourite_shows)
+        file_path = os.path.join(
+            self.profile_path, self.srgssr.fname_favourite_shows)
         if not os.path.exists(self.profile_path):
             os.makedirs(self.profile_path)
         with open(file_path, 'w') as f:

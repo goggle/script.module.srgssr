@@ -28,6 +28,7 @@ import inputstreamhelper
 
 import utils
 
+
 class Player:
     """Handles playback logic for the SRGSSR plugin."""
     def __init__(self, srgssr_instance):
@@ -47,9 +48,10 @@ class Player:
         else:
             # TODO: Could fail for livestreams
             media_type = 'video'
-            urn = 'urn:' + self.srgssr.bu + ':' + media_type + ':' + media_id_or_urn
+            urn = f'urn:{self.srgssr.bu}:{media_type}:{media_id_or_urn}'
             media_id = media_id_or_urn
-        self.srgssr.log('play_video, urn = ' + urn + ', media_id = ' + media_id)
+        self.srgssr.log(
+            'play_video, urn = ' + urn + ', media_id = ' + media_id)
 
         detail_url = ('https://il.srgssr.ch/integrationlayer/2.0/'
                       'mediaComposition/byUrn/' + urn)
@@ -59,7 +61,8 @@ class Player:
         chapter_list = utils.try_get(
             json_response, 'chapterList', data_type=list, default=[])
         if not chapter_list:
-            self.srgssr.log('play_video: no stream URL found (chapterList empty).')
+            self.srgssr.log(
+                'play_video: no stream URL found (chapterList empty).')
             return
 
         first_chapter = utils.try_get(
@@ -70,7 +73,8 @@ class Player:
         resource_list = utils.try_get(
             chapter, 'resourceList', data_type=list, default=[])
         if not resource_list:
-            self.srgssr.log('play_video: no stream URL found. (resourceList empty)')
+            self.srgssr.log(
+                'play_video: no stream URL found. (resourceList empty)')
             return
 
         stream_urls = {

@@ -177,7 +177,8 @@ class SRGSSR:
                      Kodi module SimpleCache should be used (default: True)
         """
         self.log('open_url, url = ' + str(url))
-        cache_response = self.cache.get(f'{ADDON_NAME}.open_url, url = {url}') if use_cache else None
+        cache_response = self.cache.get(
+            f'{ADDON_NAME}.open_url, url = {url}') if use_cache else None
         if not cache_response:
             headers = {
                 'User-Agent': ('Mozilla/5.0 (X11; Linux x86_64; rv:136.0) '
@@ -232,7 +233,7 @@ class SRGSSR:
         if auth_params:
             url += ('?' if '?' not in url else '&') + auth_params
         return url
-    
+
     def get_subtitles(self, url, name):
         """
         Returns subtitles from an url
