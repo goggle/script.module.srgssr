@@ -106,7 +106,6 @@ class SRGSSR:
         self.storage_manager = StorageManager(self)
         self.youtube_builder = YoutubeBuilder(self)
 
-        # TODO: Move this to storage manager:
         # Delete temporary subtitle files urn*.vtt
         clean_dir = 'special://temp'
         _, filenames = xbmcvfs.listdir(clean_dir)
@@ -309,7 +308,7 @@ class SRGSSR:
         his/her personal favourite show list.
         """
         show_list = self.read_all_available_shows()
-        stored_favids = self.read_favourite_show_ids()
+        stored_favids = self.storage_manager.read_favourite_show_ids()
         names = [x['title'] for x in show_list]
         ids = [x['id'] for x in show_list]
 
@@ -331,4 +330,4 @@ class SRGSSR:
             # Keep the old show ids:
             new_favids += ancient_ids
 
-            self.write_favourite_show_ids(new_favids)
+            self.storage_manager.write_favourite_show_ids(new_favids)
