@@ -41,19 +41,19 @@ from menus import MenuBuilder
 from youtube import YoutubeBuilder
 import utils
 
-ADDON_ID = 'script.module.srgssr'
+ADDON_ID = "script.module.srgssr"
 REAL_SETTINGS = xbmcaddon.Addon(id=ADDON_ID)
-ADDON_NAME = REAL_SETTINGS.getAddonInfo('name')
-ADDON_VERSION = REAL_SETTINGS.getAddonInfo('version')
-ICON = REAL_SETTINGS.getAddonInfo('icon')
+ADDON_NAME = REAL_SETTINGS.getAddonInfo("name")
+ADDON_VERSION = REAL_SETTINGS.getAddonInfo("version")
+ICON = REAL_SETTINGS.getAddonInfo("icon")
 LANGUAGE = REAL_SETTINGS.getLocalizedString
 TIMEOUT = 30
 
-IDREGEX = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+'
+IDREGEX = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+"
 
-FAVOURITE_SHOWS_FILENAME = 'favourite_shows.json'
-RECENT_MEDIA_SEARCHES_FILENAME = 'recently_searched_medias.json'
-YOUTUBE_CHANNELS_FILENAME = 'youtube_channels.json'
+FAVOURITE_SHOWS_FILENAME = "favourite_shows.json"
+RECENT_MEDIA_SEARCHES_FILENAME = "recently_searched_medias.json"
+YOUTUBE_CHANNELS_FILENAME = "youtube_channels.json"
 
 
 def get_params():
@@ -70,30 +70,29 @@ class SRGSSR:
     Everything that can be done independently from the business unit
     (SRF, RTS, RSI, etc.) should be done here.
     """
-    def __init__(self, plugin_handle, bu='srf', addon_id=ADDON_ID):
+
+    def __init__(self, plugin_handle, bu="srf", addon_id=ADDON_ID):
         self.handle = plugin_handle
         self.cache = simplecache.SimpleCache()
         self.real_settings = xbmcaddon.Addon(id=addon_id)
         self.bu = bu
         self.addon_id = addon_id
-        self.icon = self.real_settings.getAddonInfo('icon')
-        self.fanart = self.real_settings.getAddonInfo('fanart')
+        self.icon = self.real_settings.getAddonInfo("icon")
+        self.fanart = self.real_settings.getAddonInfo("fanart")
         self.language = LANGUAGE
         self.plugin_language = self.real_settings.getLocalizedString
-        self.host_url = f'https://www.{bu}.ch'
-        if bu == 'swi':
-            self.host_url = 'https://play.swissinfo.ch'
-        self.playtv_url = f'{self.host_url}/play/tv'
-        self.apiv3_url = f'{self.host_url}/play/v3/api/{bu}/production/'
-        self.data_regex = \
-            r'window.__remixContext\s*=\s*(.+?);\s*</script>'
-        self.data_uri = f'special://home/addons/{self.addon_id}/resources/data'
-        self.media_uri = \
-            f'special://home/addons/{self.addon_id}/resources/media'
+        self.host_url = f"https://www.{bu}.ch"
+        if bu == "swi":
+            self.host_url = "https://play.swissinfo.ch"
+        self.playtv_url = f"{self.host_url}/play/tv"
+        self.apiv3_url = f"{self.host_url}/play/v3/api/{bu}/production/"
+        self.data_regex = r"window.__remixContext\s*=\s*(.+?);\s*</script>"
+        self.data_uri = f"special://home/addons/{self.addon_id}/resources/data"
+        self.media_uri = f"special://home/addons/{self.addon_id}/resources/media"
 
         # Plugin options
-        self.debug = self.get_boolean_setting('Enable_Debugging')
-        self.prefer_hd = self.get_boolean_setting('Prefer_HD')
+        self.debug = self.get_boolean_setting("Enable_Debugging")
+        self.prefer_hd = self.get_boolean_setting("Prefer_HD")
 
         # Special files:
         self.fname_favourite_shows = FAVOURITE_SHOWS_FILENAME
@@ -107,11 +106,11 @@ class SRGSSR:
         self.youtube_builder = YoutubeBuilder(self)
 
         # Delete temporary subtitle files urn*.vtt
-        clean_dir = 'special://temp'
+        clean_dir = "special://temp"
         _, filenames = xbmcvfs.listdir(clean_dir)
         for filename in filenames:
-            if filename.startswith('urn') and filename.endswith('.vtt'):
-                xbmcvfs.delete(clean_dir + '/' + filename)
+            if filename.startswith("urn") and filename.endswith(".vtt"):
+                xbmcvfs.delete(clean_dir + "/" + filename)
 
     def get_boolean_setting(self, setting):
         """
@@ -120,7 +119,7 @@ class SRGSSR:
         Keyword arguments
         setting  -- the setting option to check
         """
-        return self.real_settings.getSetting(setting) == 'true'
+        return self.real_settings.getSetting(setting) == "true"
 
     def log(self, msg, level=xbmc.LOGDEBUG):
         """
@@ -132,8 +131,8 @@ class SRGSSR:
         """
         if self.debug:
             if level == xbmc.LOGERROR:
-                msg += ' ,' + traceback.format_exc()
-            message = ADDON_ID + '-' + ADDON_VERSION + '-' + msg
+                msg += " ," + traceback.format_exc()
+            message = ADDON_ID + "-" + ADDON_VERSION + "-" + msg
             xbmc.log(msg=message, level=level)
 
     @staticmethod
@@ -158,13 +157,13 @@ class SRGSSR:
             pass
         added = False
         queries = (url, mode, name, page_hash, page)
-        query_names = ('url', 'mode', 'name', 'page_hash', 'page')
+        query_names = ("url", "mode", "name", "page_hash", "page")
         purl = sys.argv[0]
         for query, qname in zip(queries, query_names):
             if query:
-                add = '?' if not added else '&'
+                add = "?" if not added else "&"
                 qplus = quote_plus(query)
-                purl += f'{add}{qname}={qplus}'
+                purl += f"{add}{qname}={qplus}"
                 added = True
         return purl
 
@@ -176,32 +175,37 @@ class SRGSSR:
         use_cache -- boolean to indicate if the cache provided by the
                      Kodi module SimpleCache should be used (default: True)
         """
-        self.log('open_url, url = ' + str(url))
-        cache_response = self.cache.get(
-            f'{ADDON_NAME}.open_url, url = {url}') if use_cache else None
+        self.log("open_url, url = " + str(url))
+        cache_response = (
+            self.cache.get(f"{ADDON_NAME}.open_url, url = {url}") if use_cache else None
+        )
         if not cache_response:
             headers = {
-                'User-Agent': ('Mozilla/5.0 (X11; Linux x86_64; rv:136.0) '
-                               'Gecko/20100101 Firefox/136.0')
+                "User-Agent": (
+                    "Mozilla/5.0 (X11; Linux x86_64; rv:136.0) "
+                    "Gecko/20100101 Firefox/136.0"
+                )
             }
             response = requests.get(url, headers=headers)
             if not response.ok:
-                self.log(f'open_url: Failed to open url {url}')
-                xbmcgui.Dialog().notification(
-                    ADDON_NAME, LANGUAGE(30100), ICON, 4000)
-                return ''
-            response.encoding = 'UTF-8'
+                self.log(f"open_url: Failed to open url {url}")
+                xbmcgui.Dialog().notification(ADDON_NAME, LANGUAGE(30100), ICON, 4000)
+                return ""
+            response.encoding = "UTF-8"
             self.cache.set(
-                f'{ADDON_NAME}.open_url, url = {url}',
+                f"{ADDON_NAME}.open_url, url = {url}",
                 response.text,
-                expiration=datetime.timedelta(hours=2))
+                expiration=datetime.timedelta(hours=2),
+            )
             return response.text
-        return self.cache.get(f'{ADDON_NAME}.open_url, url = {url}')
+        return self.cache.get(f"{ADDON_NAME}.open_url, url = {url}")
 
     def get_youtube_icon(self):
         path = os.path.join(
             # https://github.com/xbmc/xbmc/pull/19301
-            xbmcvfs.translatePath(self.media_uri), 'icon_youtube.png')
+            xbmcvfs.translatePath(self.media_uri),
+            "icon_youtube.png",
+        )
         if os.path.exists(path):
             return path
         return self.icon
@@ -213,8 +217,8 @@ class SRGSSR:
         This works for the business units 'srf', 'rts', 'rsi' and 'rtr', but
         not for 'swi'.
         """
-        data = json.loads(self.open_url(self.apiv3_url + 'shows'))
-        return utils.try_get(data, 'data', list, [])
+        data = json.loads(self.open_url(self.apiv3_url + "shows"))
+        return utils.try_get(data, "data", list, [])
 
     def get_auth_url(self, url, segment_data=None):
         """
@@ -223,15 +227,20 @@ class SRGSSR:
         Keyword arguments:
         url -- a given stream URL
         """
-        self.log(f'get_auth_url, url = {url}')
-        spl = urlps(url).path.split('/')
-        token = json.loads(
-            self.open_url(
-                f'https://tp.srgssr.ch/akahd/token?acl=/{spl[1]}/{spl[2]}/*',
-                use_cache=False)) or {}
-        auth_params = token.get('token', {}).get('authparams')
+        self.log(f"get_auth_url, url = {url}")
+        spl = urlps(url).path.split("/")
+        token = (
+            json.loads(
+                self.open_url(
+                    f"https://tp.srgssr.ch/akahd/token?acl=/{spl[1]}/{spl[2]}/*",
+                    use_cache=False,
+                )
+            )
+            or {}
+        )
+        auth_params = token.get("token", {}).get("authparams")
         if auth_params:
-            url += ('?' if '?' not in url else '&') + auth_params
+            url += ("?" if "?" not in url else "&") + auth_params
         return url
 
     def get_subtitles(self, url, name):
@@ -250,34 +259,34 @@ class SRGSSR:
         parsed_url = urlps(url)
         query_list = parse_qsl(parsed_url.query)
         for query in query_list:
-            if query[0] == 'caption':
+            if query[0] == "caption":
                 caption = query[1]
-            elif query[0] == 'webvttbaseurl':
+            elif query[0] == "webvttbaseurl":
                 webvttbaseurl = query[1]
 
         if not caption or not webvttbaseurl:
             return None
 
-        cap_comps = caption.split(':')
-        lang = '.' + cap_comps[1] if len(cap_comps) > 1 else ''
-        sub_url = ('https://' + webvttbaseurl + '/' + cap_comps[0])
-        self.log('subtitle url: ' + sub_url)
-        if not sub_url.endswith('.m3u8'):
+        cap_comps = caption.split(":")
+        lang = "." + cap_comps[1] if len(cap_comps) > 1 else ""
+        sub_url = "https://" + webvttbaseurl + "/" + cap_comps[0]
+        self.log("subtitle url: " + sub_url)
+        if not sub_url.endswith(".m3u8"):
             return [sub_url]
 
         # Build temporary local file in case of m3u playlist
-        sub_name = 'special://temp/' + name + lang + '.vtt'
+        sub_name = "special://temp/" + name + lang + ".vtt"
         if not xbmcvfs.exists(sub_name):
-            m3u_base = sub_url.rsplit('/', 1)[0]
+            m3u_base = sub_url.rsplit("/", 1)[0]
             m3u = self.open_url(sub_url, use_cache=False)
-            sub_file = xbmcvfs.File(sub_name, 'w')
+            sub_file = xbmcvfs.File(sub_name, "w")
 
             # Concatenate chunks and remove header on subsequent
             first = True
             for line in m3u.splitlines():
-                if line.startswith('#'):
+                if line.startswith("#"):
                     continue
-                subs = self.open_url(m3u_base + '/' + line, use_cache=False)
+                subs = self.open_url(m3u_base + "/" + line, use_cache=False)
                 if first:
                     sub_file.write(subs)
                     first = False
@@ -285,7 +294,7 @@ class SRGSSR:
                     i = 0
                     while i < len(subs) and not subs[i].isnumeric():
                         i += 1
-                    sub_file.write('\n')
+                    sub_file.write("\n")
                     sub_file.write(subs[i:])
 
             sub_file.close()
@@ -300,7 +309,7 @@ class SRGSSR:
         stream_url -- the stream url
         """
         auth_url = self.get_auth_url(stream_url)
-        play_item = xbmcgui.ListItem('Live', path=auth_url)
+        play_item = xbmcgui.ListItem("Live", path=auth_url)
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
     def manage_favourite_shows(self):
@@ -310,8 +319,8 @@ class SRGSSR:
         """
         show_list = self.read_all_available_shows()
         stored_favids = self.storage_manager.read_favourite_show_ids()
-        names = [x['title'] for x in show_list]
-        ids = [x['id'] for x in show_list]
+        names = [x["title"] for x in show_list]
+        ids = [x["id"] for x in show_list]
 
         preselect_inds = []
         for stored_id in stored_favids:
@@ -324,7 +333,8 @@ class SRGSSR:
         dialog = xbmcgui.Dialog()
         # Choose your favourite shows
         selected_inds = dialog.multiselect(
-            LANGUAGE(30069), names, preselect=preselect_inds)
+            LANGUAGE(30069), names, preselect=preselect_inds
+        )
 
         if selected_inds is not None:
             new_favids = [ids[ind] for ind in selected_inds]

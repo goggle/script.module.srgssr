@@ -24,10 +24,12 @@ import xbmcvfs
 
 class StorageManager:
     """Manages file I/O operations for the SRGSSR plugin."""
+
     def __init__(self, srgssr_instance):
         self.srgssr = srgssr_instance
         self.profile_path = xbmcvfs.translatePath(
-            self.srgssr.real_settings.getAddonInfo('profile'))
+            self.srgssr.real_settings.getAddonInfo("profile")
+        )
 
     def read_favourite_show_ids(self):
         """
@@ -39,14 +41,15 @@ class StorageManager:
         path = xbmcvfs.translatePath(self.profile_path)
         file_path = os.path.join(path, self.srgssr.fname_favourite_shows)
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 json_file = json.load(f)
                 try:
-                    return [entry['id'] for entry in json_file]
+                    return [entry["id"] for entry in json_file]
                 except KeyError:
                     self.srgssr.log(
-                        'Unexpected file structure '
-                        f'for {self.srgssr.fname_favourite_shows}.')
+                        "Unexpected file structure "
+                        f"for {self.srgssr.fname_favourite_shows}."
+                    )
                     return []
         except (IOError, TypeError):
             return []
@@ -59,23 +62,22 @@ class StorageManager:
         Keyword arguments:
         show_ids -- a list of show ids (as strings)
         """
-        show_ids_dict_list = [{'id': show_id} for show_id in show_ids]
-        file_path = os.path.join(
-            self.profile_path, self.srgssr.fname_favourite_shows)
+        show_ids_dict_list = [{"id": show_id} for show_id in show_ids]
+        file_path = os.path.join(self.profile_path, self.srgssr.fname_favourite_shows)
         if not os.path.exists(self.profile_path):
             os.makedirs(self.profile_path)
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(show_ids_dict_list, f)
 
     def read_searches(self, filename):
         file_path = os.path.join(self.profile_path, filename)
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 json_file = json.load(f)
             try:
-                return [entry['search'] for entry in json_file]
+                return [entry["search"] for entry in json_file]
             except KeyError:
-                self.srgssr.log(f'Unexpected file structure for {filename}.')
+                self.srgssr.log(f"Unexpected file structure for {filename}.")
                 return []
         except (IOError, TypeError):
             return []
@@ -89,9 +91,9 @@ class StorageManager:
         if len(searches) >= max_entries:
             searches.pop()
         searches.insert(0, name)
-        write_dict_list = [{'search': entry} for entry in searches]
+        write_dict_list = [{"search": entry} for entry in searches]
         file_path = os.path.join(self.profile_path, filename)
         if not os.path.exists(self.profile_path):
             os.makedirs(self.profile_path)
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(write_dict_list, f)

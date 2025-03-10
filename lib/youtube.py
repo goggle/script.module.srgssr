@@ -40,11 +40,10 @@ class YoutubeBuilder:
         Keyword arguments:
         fname  -- the path to the file to be read
         """
-        data_file = os.path.join(
-            xbmcvfs.translatePath(self.srgssr.data_uri), fname)
-        with open(data_file, 'r', encoding='utf-8') as f:
+        data_file = os.path.join(xbmcvfs.translatePath(self.srgssr.data_uri), fname)
+        with open(data_file, "r", encoding="utf-8") as f:
             ch_content = json.load(f)
-            cids = [elem['channel'] for elem in ch_content.get('channels', [])]
+            cids = [elem["channel"] for elem in ch_content.get("channels", [])]
             return cids
         return []
 
@@ -52,13 +51,16 @@ class YoutubeBuilder:
         """
         Uses the cache to generate a list of the stored YouTube channel IDs.
         """
-        cache_identifier = self.srgssr.addon_id + '.youtube_channel_ids'
+        cache_identifier = self.srgssr.addon_id + ".youtube_channel_ids"
         channel_ids = self.srgssr.cache.get(cache_identifier)
         if not channel_ids:
-            self.log('get_youtube_channel_ids: Caching YouTube channel ids.'
-                     'This log message should not appear too many times.')
+            self.log(
+                "get_youtube_channel_ids: Caching YouTube channel ids."
+                "This log message should not appear too many times."
+            )
             channel_ids = self._read_youtube_channels(
-                self.srgssr.fname_youtube_channels)
+                self.srgssr.fname_youtube_channels
+            )
             self.srgssr.cache.set(cache_identifier, channel_ids)
         return channel_ids
 
@@ -66,23 +68,27 @@ class YoutubeBuilder:
         """
         Builds the main YouTube menu.
         """
-        items = [{
-            'name': self.srgssr.language(30110),
-            'mode': 31,
-        }, {
-            'name': self.srgssr.language(30111),
-            'mode': 32,
-        }]
+        items = [
+            {
+                "name": self.srgssr.language(30110),
+                "mode": 31,
+            },
+            {
+                "name": self.srgssr.language(30111),
+                "mode": 32,
+            },
+        ]
 
         for item in items:
-            list_item = xbmcgui.ListItem(label=item['name'])
-            list_item.setProperty('IsPlayable', 'false')
-            list_item.setArt({
-                'icon': self.srgssr.get_youtube_icon(),
-            })
-            purl = self.srgssr.build_url(mode=item['mode'])
-            xbmcplugin.addDirectoryItem(
-                self.handle, purl, list_item, isFolder=True)
+            list_item = xbmcgui.ListItem(label=item["name"])
+            list_item.setProperty("IsPlayable", "false")
+            list_item.setArt(
+                {
+                    "icon": self.srgssr.get_youtube_icon(),
+                }
+            )
+            purl = self.srgssr.build_url(mode=item["mode"])
+            xbmcplugin.addDirectoryItem(self.handle, purl, list_item, isFolder=True)
 
     def build_youtube_channel_overview_menu(self, mode):
         """
@@ -95,11 +101,10 @@ class YoutubeBuilder:
         """
         channel_ids = self.get_youtube_channel_ids()
         youtube_channels.YoutubeChannels(
-                self.handle, channel_ids,
-                self.srgssr.addon_id, self.srgssr.debug
-            ).build_channel_overview_menu()
+            self.handle, channel_ids, self.srgssr.addon_id, self.srgssr.debug
+        ).build_channel_overview_menu()
 
-    def build_youtube_channel_menu(self, cid, mode, page=1, page_token=''):
+    def build_youtube_channel_menu(self, cid, mode, page=1, page_token=""):
         """
         Builds a YouTube channel menu (containing a list of the
         most recent uploaded videos).
@@ -122,17 +127,15 @@ class YoutubeBuilder:
 
         channel_ids = self.get_youtube_channel_ids()
         next_page_token = youtube_channels.YoutubeChannels(
-            self.handle, channel_ids,
-            self.srgssr.addon_id, self.srgssr.debug).build_channel_menu(
-                cid, page_token=page_token)
+            self.handle, channel_ids, self.srgssr.addon_id, self.srgssr.debug
+        ).build_channel_menu(cid, page_token=page_token)
         if next_page_token:
-            next_item = xbmcgui.ListItem(
-                label='>> ' + self.srgssr.language(30073))
+            next_item = xbmcgui.ListItem(label=">> " + self.srgssr.language(30073))
             next_url = self.srgssr.build_url(
-                mode=mode, name=cid, page_hash=next_page_token)
-            next_item.setProperty('IsPlayable', 'false')
-            xbmcplugin.addDirectoryItem(
-                self.handle, next_url, next_item, isFolder=True)
+                mode=mode, name=cid, page_hash=next_page_token
+            )
+            next_item.setProperty("IsPlayable", "false")
+            xbmcplugin.addDirectoryItem(self.handle, next_url, next_item, isFolder=True)
 
     def build_youtube_newest_videos_menu(self, mode, page=1):
         """
@@ -151,13 +154,10 @@ class YoutubeBuilder:
 
         channel_ids = self.get_youtube_channel_ids()
         next_page = youtube_channels.YoutubeChannels(
-                self.handle, channel_ids,
-                self.srgssr.addon_id, self.srgssr.debug
-            ).build_newest_videos(page=page)
+            self.handle, channel_ids, self.srgssr.addon_id, self.srgssr.debug
+        ).build_newest_videos(page=page)
         if next_page:
-            next_item = xbmcgui.ListItem(
-                label='>> ' + self.srgssr.language(30073))
+            next_item = xbmcgui.ListItem(label=">> " + self.srgssr.language(30073))
             next_url = self.srgssr.build_url(mode=mode, page=next_page)
-            next_item.setProperty('IsPlayable', 'false')
-            xbmcplugin.addDirectoryItem(
-                self.handle, next_url, next_item, isFolder=True)
+            next_item.setProperty("IsPlayable", "false")
+            xbmcplugin.addDirectoryItem(self.handle, next_url, next_item, isFolder=True)
