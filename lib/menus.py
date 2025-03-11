@@ -90,14 +90,6 @@ class MenuBuilder:
                 "icon": self.srgssr.icon,
             },
             {
-                # Most searched TV shows
-                "identifier": "Most_Searched_TV_Shows",
-                "name": self.srgssr.plugin_language(30059),
-                "mode": 14,
-                "displayItem": display_item("Most_Searched_TV_Shows"),
-                "icon": self.srgssr.icon,
-            },
-            {
                 # Shows by date
                 "identifier": "Shows_By_Date",
                 "name": self.srgssr.plugin_language(30057),
@@ -286,13 +278,6 @@ class MenuBuilder:
         Builds a menu containing the topics from the SRGSSR API.
         """
         self.build_menu_apiv3("topics")
-
-    def build_most_searched_shows_menu(self):
-        """
-        Builds a menu containing the most searched TV shows from
-        the SRGSSR API.
-        """
-        self.build_menu_apiv3("search/most-searched-tv-shows", is_show=True)
 
     def build_newest_favourite_menu(self, page=1):
         """
