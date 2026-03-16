@@ -17,10 +17,8 @@
 # along with script.module.srgssr.
 # If not, see <http://www.gnu.org/licenses/>.
 
-from urllib.parse import parse_qsl, ParseResult
-from urllib.parse import urlparse as urlps
-
 import json
+import xbmc
 import xbmcgui
 import xbmcplugin
 
@@ -133,28 +131,15 @@ class Player:
                         end_time = end_time // 1000
                     break
 
-            if start_time and end_time:
-                parsed_url = urlps(auth_url)
-                query_list = parse_qsl(parsed_url.query)
-                updated_query_list = []
-                for query in query_list:
-                    if query[0] == "start" or query[0] == "end":
-                        continue
-                    updated_query_list.append(query)
-                updated_query_list.append(("start", str(start_time)))
-                updated_query_list.append(("end", str(end_time)))
-                new_query = utils.assemble_query_string(updated_query_list)
-                surl_result = ParseResult(
-                    parsed_url.scheme,
-                    parsed_url.netloc,
-                    parsed_url.path,
-                    parsed_url.params,
-                    new_query,
-                    parsed_url.fragment,
-                )
-                auth_url = surl_result.geturl()
         self.srgssr.log(f"play_video, auth_url = {auth_url}")
         play_item = xbmcgui.ListItem(title, path=auth_url)
+        if self.srgssr.get_kodi_major_version() >= 20 and start_time and end_time:
+            info_tag = play_item.getVideoInfoTag()
+            duration = end_time - start_time
+            info_tag.setResumePoint(start_time, duration)
+            info_tag.addVideoStream(xbmc.VideoStreamDetail(duration=duration))
+            info_tag.setDuration(duration)
+
         subs = self.srgssr.get_subtitles(stream_url, urn)
         if subs:
             play_item.setSubtitles(subs)

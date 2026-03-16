@@ -200,6 +200,20 @@ class SRGSSR:
             return response.text
         return self.cache.get(f"{ADDON_NAME}.open_url, url = {url}")
 
+    def get_kodi_major_version(self):
+        """
+        Returns the major version number of Kodi (e.g., 20 for Kodi 20 Nexus).
+        """
+        version = xbmc.getInfoLabel("System.BuildVersion")
+        try:
+            major_version = int(version.split(".")[0])
+            return major_version
+        except (IndexError, ValueError):
+            self.log(
+                "get_kodi_major_version: Failed to parse Kodi version, assuming version 19"
+            )
+            return 19
+
     def get_youtube_icon(self):
         path = os.path.join(
             # https://github.com/xbmc/xbmc/pull/19301
