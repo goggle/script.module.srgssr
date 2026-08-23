@@ -139,7 +139,13 @@ class SRGSSR:
 
     @staticmethod
     def build_url(
-        mode=None, name=None, url=None, page_hash=None, page=None, title=None
+        mode=None,
+        name=None,
+        url=None,
+        page_hash=None,
+        page=None,
+        title=None,
+        resume=None,
     ):
         """Build a URL for the Kodi plugin.
 
@@ -152,6 +158,8 @@ class SRGSSR:
                      the list of items
         title     -- fallback title for the target mode (e.g. scheduled
                      livestream events)
+        resume    -- a resume position in seconds, for mode=50 (play_video)
+                     to seek to on start instead of playing from 0
         """
         try:
             mode = str(mode)
@@ -161,9 +169,15 @@ class SRGSSR:
             page = str(page)
         except Exception:
             pass
+        try:
+            resume = str(resume) if resume else None
+        except Exception:
+            resume = None
         added = False
-        queries = (url, mode, name, page_hash, page, title)
-        query_names = ("url", "mode", "name", "page_hash", "page", "title")
+        queries = (url, mode, name, page_hash, page, title, resume)
+        query_names = (
+            "url", "mode", "name", "page_hash", "page", "title", "resume",
+        )
         purl = sys.argv[0]
         for query, qname in zip(queries, query_names):
             if query:

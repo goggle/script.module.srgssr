@@ -48,7 +48,7 @@ class Player:
         self.srgssr = srgssr_instance
         self.handle = srgssr_instance.handle
 
-    def play_video(self, media_id_or_urn, title=None):
+    def play_video(self, media_id_or_urn, title=None, resume=None):
         """
         Gets the stream information starts to play it.
 
@@ -56,6 +56,9 @@ class Player:
         media_id_or_urn -- the urn or id of the media to play
         title           -- fallback title, used when mediaComposition has
                             none (e.g. scheduled livestream events)
+        resume          -- resume position in seconds; must be set on the
+                            played ListItem itself, not just the listing's,
+                            or Kodi won't seek there
         """
         if ":scheduled_livestream:" in media_id_or_urn:
             # scheduledLivestreams event URNs aren't resolvable by
@@ -116,6 +119,12 @@ class Player:
             )
             return
 
+        duration_ms = utils.try_get(chapter, "duration", data_type=int)
+        duration_sec = duration_ms // 1000 if duration_ms else None
+        if resume and not duration_sec:
+            # Kodi needs both ResumeTime and TotalTime to seek on start.
+            resume = None
+
         stream_urls = {
             "SD": "",
             "HD": "",
@@ -134,7 +143,9 @@ class Player:
                         stream_urls[key] = utils.try_get(resource, "url")
 
         if drm:
-            self.play_drm(urn, title, resource_list)
+            self.play_drm(
+                urn, title, resource_list, resume=resume, duration=duration_sec
+            )
             return
 
         if not stream_urls["SD"] and not stream_urls["HD"]:
@@ -203,9 +214,13 @@ class Player:
         play_item.setProperty("inputstream.adaptive.manifest_type", mf_type)
         play_item.setProperty("IsPlayable", "true")
 
+        if resume and duration_sec:
+            play_item.setProperty("ResumeTime", str(resume))
+            play_item.setProperty("TotalTime", str(duration_sec))
+
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
-    def play_drm(self, urn, title, resource_list):
+    def play_drm(self, urn, title, resource_list, resume=None, duration=None):
         self.srgssr.log(f"play_drm: urn = {urn}")
         preferred_quality = "HD" if self.srgssr.prefer_hd else "SD"
         resource_data = {
@@ -274,6 +289,9 @@ class Player:
             play_item.setProperty(
                 f"{ia}.manifest_update_url", manifest_update_url
             )
+        if resume and duration:
+            play_item.setProperty("ResumeTime", str(resume))
+            play_item.setProperty("TotalTime", str(duration))
         xbmcplugin.setResolvedUrl(self.handle, True, play_item)
 
         if use_local_manifest:

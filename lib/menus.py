@@ -751,6 +751,7 @@ class MenuBuilder:
                 url = self.srgssr.build_url(mode=50, name=urn)
             else:
                 url = self.srgssr.build_url(mode=50, name=name)
+
         xbmcplugin.addDirectoryItem(
             self.handle, url, list_item, isFolder=is_folder
         )
