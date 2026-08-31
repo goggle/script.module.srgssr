@@ -218,7 +218,7 @@ class MenuBuilder:
 
         if cursor:
             symb = "&" if "?" in queries else "?"
-            url = f"{self.srgssr.apiv3_url}{queries}{symb}next={cursor}"
+            url = f"{self.srgssr.apiv3_url}{queries}{symb}next={quote_plus(cursor)}"
             data = json.loads(self.srgssr.open_url(url))
         else:
             data = json.loads(
