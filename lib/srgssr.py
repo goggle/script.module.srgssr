@@ -64,6 +64,78 @@ def get_params():
     return dict(parse_qsl(sys.argv[2][1:]))
 
 
+STATIC_TRANSLATIONS = {
+    "fr": {
+        30050: "Toutes les émissions",
+        30051: "Émissions favorites",
+        30052: "Nouvelles émissions favorites",
+        30053: "Recommandations",
+        30057: "Émissions par date",
+        30058: "Thèmes",
+        30060: "Page d'accueil",
+        30073: "Page suivante",
+        30074: "YouTube",
+        30085: "Recherche",
+        30110: "Chaînes YouTube",
+        30111: "Dernières vidéos YouTube",
+        30112: "Rechercher des vidéos",
+        30115: "Rechercher",
+        30116: "Dernières recherches de vidéos",
+    },
+    "de": {
+        30050: "Alle Sendungen",
+        30051: "Bevorzugte Sendungen",
+        30052: "Neuste bevorzugte Sendungen",
+        30053: "Empfehlungen",
+        30057: "Sendungen nach Datum",
+        30058: "Themen",
+        30060: "Startseite",
+        30073: "Nächste Seite",
+        30074: "YouTube",
+        30085: "Suche",
+        30110: "YouTube Kanäle",
+        30111: "Neuste YouTube Videos",
+        30112: "Videos suchen",
+        30115: "Suche",
+        30116: "Neuste Videosuchen",
+    },
+    "it": {
+        30050: "Tutti i programmi",
+        30051: "Programmi preferiti",
+        30052: "Nuovi show preferiti",
+        30053: "Consigli",
+        30057: "Programmi per data",
+        30058: "Temi",
+        30060: "Pagina iniziale",
+        30073: "Pagina successiva",
+        30074: "YouTube",
+        30085: "Cerca",
+        30110: "Canali YouTube",
+        30111: "Ultimi video YouTube",
+        30112: "Cerca video",
+        30115: "Cerca",
+        30116: "Ricerche video recenti",
+    },
+    "rm": {
+        30050: "Tuts ils programs",
+        30051: "Programs favurits",
+        30052: "Novas missiuns favuritas",
+        30053: "Recumandaziuns",
+        30057: "Programs tenor data",
+        30058: "Temas",
+        30060: "Pagina principala",
+        30073: "Proxima pagina",
+        30074: "YouTube",
+        30085: "Tschertgar",
+        30110: "Canals da YouTube",
+        30111: "Ultims videos da YouTube",
+        30112: "Tschertgar videos",
+        30115: "Tschertgar",
+        30116: "Ultimas tschertgas da videos",
+    }
+}
+
+
 class SRGSSR:
     """
     Base class for all SRG SSR related plugins.
@@ -79,8 +151,8 @@ class SRGSSR:
         self.addon_id = addon_id
         self.icon = self.real_settings.getAddonInfo("icon")
         self.fanart = self.real_settings.getAddonInfo("fanart")
-        self.language = LANGUAGE
-        self.plugin_language = self.real_settings.getLocalizedString
+        self.language = self.get_localized_string
+        self.plugin_language = self.get_localized_string
         self.host_url = f"https://www.{bu}.ch"
         if bu == "swi":
             self.host_url = "https://play.swissinfo.ch"
@@ -113,6 +185,53 @@ class SRGSSR:
         for filename in filenames:
             if filename.startswith("urn") and filename.endswith(".vtt"):
                 xbmcvfs.delete(clean_dir + "/" + filename)
+
+    def get_localized_string(self, id_or_str):
+        """
+        Returns a localized string according to Kodi's locale,
+        falling back to the business unit's (BU's) native Swiss language
+        if Kodi is running in a non-Swiss language (to prevent language mixing).
+        """
+        try:
+            val_id = int(id_or_str)
+        except (ValueError, TypeError):
+            return str(id_or_str)
+
+        # 1. Determine target BU language
+        bu_lang = "en"
+        if self.bu == "rts":
+            bu_lang = "fr"
+        elif self.bu == "srf":
+            bu_lang = "de"
+        elif self.bu == "rsi":
+            bu_lang = "it"
+        elif self.bu == "rtr":
+            bu_lang = "rm"
+
+        # 2. Determine active Kodi language
+        try:
+            kodi_lang = xbmc.getLanguage(xbmc.ISO_639_1, True)
+        except Exception:
+            kodi_lang = "en"
+
+        # Check if Kodi is running in a Swiss language
+        is_swiss_lang = False
+        kodi_lang_lower = kodi_lang.lower()
+        for sl in ("de", "fr", "it", "rm"):
+            if sl in kodi_lang_lower:
+                is_swiss_lang = True
+                break
+
+        # 3. If Kodi is not in a Swiss language, force the BU's native language!
+        if not is_swiss_lang and bu_lang in STATIC_TRANSLATIONS:
+            if val_id in STATIC_TRANSLATIONS[bu_lang]:
+                return STATIC_TRANSLATIONS[bu_lang][val_id]
+
+        # 4. Otherwise, fallback to Kodi's native translation
+        try:
+            return self.real_settings.getLocalizedString(val_id)
+        except Exception:
+            return ""
 
     def get_boolean_setting(self, setting):
         """
