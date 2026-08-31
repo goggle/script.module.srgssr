@@ -647,6 +647,8 @@ class MenuBuilder:
                                 time_left_str = f"In {days_start}T"
                             elif self.srgssr.bu == "rsi":
                                 time_left_str = f"Tra {days_start}g"
+                            elif self.srgssr.bu == "rtr":
+                                time_left_str = f"In {days_start}d"
                             else:
                                 time_left_str = f"In {days_start}d"
                         elif hours_start > 0:
@@ -656,6 +658,8 @@ class MenuBuilder:
                                 time_left_str = f"In {hours_start}Std"
                             elif self.srgssr.bu == "rsi":
                                 time_left_str = f"Tra {hours_start}o"
+                            elif self.srgssr.bu == "rtr":
+                                time_left_str = f"In {hours_start}u"
                             else:
                                 time_left_str = f"In {hours_start}h"
                         else:
@@ -665,6 +669,8 @@ class MenuBuilder:
                                 time_left_str = "Beginnt bald"
                             elif self.srgssr.bu == "rsi":
                                 time_left_str = "Inizia presto"
+                            elif self.srgssr.bu == "rtr":
+                                time_left_str = "Cumenza baud"
                             else:
                                 time_left_str = "Starting soon"
 
@@ -683,6 +689,8 @@ class MenuBuilder:
                             time_left_str = f"Noch {days}T"
                         elif self.srgssr.bu == "rsi":
                             time_left_str = f"Ancora {days}g"
+                        elif self.srgssr.bu == "rtr":
+                            time_left_str = f"Ancor {days}d"
                         else:
                             time_left_str = f"{days}d left"
                     else:
@@ -694,6 +702,8 @@ class MenuBuilder:
                                 time_left_str = f"Noch {hours}Std"
                             elif self.srgssr.bu == "rsi":
                                 time_left_str = f"Ancora {hours}o"
+                            elif self.srgssr.bu == "rtr":
+                                time_left_str = f"Ancor {hours}u"
                             else:
                                 time_left_str = f"{hours}h left"
                         else:
@@ -703,6 +713,8 @@ class MenuBuilder:
                                 time_left_str = "Letzte Momente"
                             elif self.srgssr.bu == "rsi":
                                 time_left_str = "Ultimi momenti"
+                            elif self.srgssr.bu == "rtr":
+                                time_left_str = "Ultims muments"
                             else:
                                 time_left_str = "Ending soon"
 
@@ -734,6 +746,9 @@ class MenuBuilder:
                 elif self.srgssr.bu == "rsi":
                     formatted_expiry = valid_to_dt.strftime("%d.%m.%Y alle %H:%M")
                     expiry_desc = f"[Disponibile fino al {formatted_expiry}]"
+                elif self.srgssr.bu == "rtr":
+                    formatted_expiry = valid_to_dt.strftime("%d.%m.%Y a las %H:%M")
+                    expiry_desc = f"[Disponibel fin ils {formatted_expiry}]"
                 else:
                     formatted_expiry = valid_to_dt.strftime("%d.%m.%Y at %H:%M")
                     expiry_desc = f"[Available until {formatted_expiry}]"
