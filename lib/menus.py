@@ -623,6 +623,49 @@ class MenuBuilder:
         self.srgssr.log(f"build_entry_apiv3: urn = {urn}")
         title = utils.try_get(data, "title")
 
+        # Add remaining time or expiration info for limited-time content:
+        valid_to_str = utils.try_get(data, "validTo")
+        if valid_to_str:
+            valid_to_dt = utils.parse_datetime(valid_to_str)
+            if valid_to_dt:
+                now_dt = datetime.datetime.now()
+                delta = valid_to_dt - now_dt
+                if delta.total_seconds() > 0 and delta.days <= 30:
+                    days = delta.days
+                    hours = delta.seconds // 3600
+                    color = "gold"
+                    if days > 0:
+                        if self.srgssr.bu == "rts":
+                            time_left_str = f"Encore {days}j"
+                        elif self.srgssr.bu == "srf":
+                            time_left_str = f"Noch {days}T"
+                        elif self.srgssr.bu == "rsi":
+                            time_left_str = f"Ancora {days}g"
+                        else:
+                            time_left_str = f"{days}d left"
+                    else:
+                        color = "red"
+                        if hours > 0:
+                            if self.srgssr.bu == "rts":
+                                time_left_str = f"Encore {hours}h"
+                            elif self.srgssr.bu == "srf":
+                                time_left_str = f"Noch {hours}Std"
+                            elif self.srgssr.bu == "rsi":
+                                time_left_str = f"Ancora {hours}o"
+                            else:
+                                time_left_str = f"{hours}h left"
+                        else:
+                            if self.srgssr.bu == "rts":
+                                time_left_str = "Derniers instants"
+                            elif self.srgssr.bu == "srf":
+                                time_left_str = "Letzte Momente"
+                            elif self.srgssr.bu == "rsi":
+                                time_left_str = "Ultimi momenti"
+                            else:
+                                time_left_str = "Ending soon"
+
+                    title = f"[COLOR {color}][{time_left_str}][/COLOR] {title}"
+
         # Add the date & time to the title for upcoming livestreams:
         if utils.try_get(data, "type") == "SCHEDULED_LIVESTREAM":
             dt = utils.try_get(data, "date")
@@ -637,6 +680,27 @@ class MenuBuilder:
             return
         description = utils.try_get(data, "description")
         lead = utils.try_get(data, "lead")
+        if valid_to_str:
+            valid_to_dt = utils.parse_datetime(valid_to_str)
+            if valid_to_dt:
+                if self.srgssr.bu == "rts":
+                    formatted_expiry = valid_to_dt.strftime("%d.%m.%Y à %H:%M")
+                    expiry_desc = f"[Disponible jusqu'au {formatted_expiry}]"
+                elif self.srgssr.bu == "srf":
+                    formatted_expiry = valid_to_dt.strftime("%d.%m.%Y um %H:%M")
+                    expiry_desc = f"[Verfügbar bis {formatted_expiry}]"
+                elif self.srgssr.bu == "rsi":
+                    formatted_expiry = valid_to_dt.strftime("%d.%m.%Y alle %H:%M")
+                    expiry_desc = f"[Disponibile fino al {formatted_expiry}]"
+                else:
+                    formatted_expiry = valid_to_dt.strftime("%d.%m.%Y at %H:%M")
+                    expiry_desc = f"[Available until {formatted_expiry}]"
+
+                plot_content = description or lead or ""
+                if plot_content:
+                    description = f"{expiry_desc}\n{plot_content}"
+                else:
+                    description = expiry_desc
         image_url = utils.try_get(data, "imageUrl")
         poster_image_url = utils.try_get(data, "posterImageUrl")
         show_image_url = utils.try_get(data, ["show", "imageUrl"])
