@@ -324,18 +324,92 @@ class MenuBuilder:
         """
         Builds the homepage menu.
         """
-        self.build_menu_from_page(
-            self.srgssr.playtv_url,
-            (
-                "state",
-                "loaderData",
-                "play-now",
-                "initialData",
-                "pacPageConfigs",
-                "landingPage",
-                "sections",
-            ),
-        )
+        success = self.build_menu_from_api("landing-page")
+        if not success:
+            self.srgssr.log("build_homepage_menu: API failed, falling back to page parsing")
+            self.build_menu_from_page(
+                self.srgssr.playtv_url,
+                (
+                    "state",
+                    "loaderData",
+                    "play-now",
+                    "initialData",
+                    "pacPageConfigs",
+                    "landingPage",
+                    "sections",
+                ),
+            )
+
+    def build_menu_from_api(self, query, path=("data", "sections")):
+        """
+        Builds a menu by calling a v3 API endpoint.
+
+        Keyword arguments:
+        query   -- the API endpoint query (e.g. 'landing-page')
+        path    -- the path to the relevant data in the json
+        """
+        url = self.srgssr.apiv3_url + query
+        self.srgssr.log(f"build_menu_from_api: fetching {url}")
+        try:
+            response_text = self.srgssr.open_url(url)
+            if not response_text:
+                self.srgssr.log(f"build_menu_from_api: Empty response from {url}")
+                return False
+            js = json.loads(response_text)
+        except Exception as e:
+            self.srgssr.log(f"build_menu_from_api: Failed to fetch/parse {url}: {e}")
+            return False
+
+        data = utils.try_get(js, path, list, [])
+        if not data:
+            self.srgssr.log(
+                f"build_menu_from_api: Could not find any data at path {path} in json"
+            )
+            return False
+
+        has_items = False
+        for elem in data:
+            try:
+                id = elem["id"]
+                section_type = elem["sectionType"]
+                title = utils.try_get(elem, ("representation", "title"))
+                if title:
+                    title = "".join(c for c in title if ord(c) <= 0xFFFF).strip()
+                if section_type in (
+                    "MediaSection",
+                    "ShowSection",
+                    "MediaSectionWithShow",
+                ):
+                    if (
+                        section_type == "MediaSection"
+                        and not title
+                        and utils.try_get(elem, ("representation", "name"))
+                        == "HeroStage"
+                    ):
+                        title = self.srgssr.language(30053)
+                    if not title:
+                        continue
+                    list_item = xbmcgui.ListItem(label=title)
+                    list_item.setArt(
+                        {
+                            "thumb": self.srgssr.icon,
+                            "fanart": self.srgssr.fanart,
+                        }
+                    )
+                    if section_type == "MediaSection":
+                        name = f"media-section?sectionId={id}"
+                    elif section_type == "ShowSection":
+                        name = f"show-section?sectionId={id}"
+                    elif section_type == "MediaSectionWithShow":
+                        name = f"media-section-with-show?sectionId={id}"
+                    url = self.srgssr.build_url(mode=1000, name=name, page=1)
+                    xbmcplugin.addDirectoryItem(
+                        self.handle, url, list_item, isFolder=True
+                    )
+                    has_items = True
+            except Exception:
+                pass
+        return has_items
 
     def build_menu_from_page(self, url, path):
         """
@@ -368,6 +442,8 @@ class MenuBuilder:
                 id = elem["id"]
                 section_type = elem["sectionType"]
                 title = utils.try_get(elem, ("representation", "title"))
+                if title:
+                    title = "".join(c for c in title if ord(c) <= 0xFFFF).strip()
                 if section_type in (
                     "MediaSection",
                     "ShowSection",
@@ -625,19 +701,22 @@ class MenuBuilder:
         elif "video" in urn:
             self.build_episode_menu(id)
         elif "topic" in urn:
-            self.build_menu_from_page(
-                self.srgssr.playtv_url,
-                (
-                    "state",
-                    "loaderData",
-                    "play-now",
-                    "initialData",
-                    "pacPageConfigs",
-                    "topicPages",
-                    urn,
-                    "sections",
-                ),
-            )
+            success = self.build_menu_from_api(f"topic-page?topicUrn={urn}")
+            if not success:
+                self.srgssr.log(f"build_menu_by_urn: topic-page API failed, falling back to page parsing for {urn}")
+                self.build_menu_from_page(
+                    self.srgssr.playtv_url,
+                    (
+                        "state",
+                        "loaderData",
+                        "play-now",
+                        "initialData",
+                        "pacPageConfigs",
+                        "topicPages",
+                        urn,
+                        "sections",
+                    ),
+                )
 
     def build_entry(
         self,
