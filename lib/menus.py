@@ -623,14 +623,56 @@ class MenuBuilder:
         self.srgssr.log(f"build_entry_apiv3: urn = {urn}")
         title = utils.try_get(data, "title")
 
-        # Add remaining time or expiration info for limited-time content:
+        # Add remaining time, start countdown, or expiration info:
         valid_to_str = utils.try_get(data, "validTo")
+        valid_from_str = utils.try_get(data, "validFrom") or utils.try_get(data, "date")
+        valid_from_dt = utils.parse_datetime(valid_from_str) if valid_from_str else None
+
         if valid_to_str:
             valid_to_dt = utils.parse_datetime(valid_to_str)
             if valid_to_dt:
                 now_dt = datetime.datetime.now()
-                delta = valid_to_dt - now_dt
-                if delta.total_seconds() > 0 and delta.days <= 30:
+
+                # Case 1: The stream/video is scheduled for the future (has not started yet)
+                if valid_from_dt and valid_from_dt > now_dt:
+                    delta_start = valid_from_dt - now_dt
+                    if delta_start.days <= 30:
+                        days_start = delta_start.days
+                        hours_start = delta_start.seconds // 3600
+                        color = "cyan"
+                        if days_start > 0:
+                            if self.srgssr.bu == "rts":
+                                time_left_str = f"Dans {days_start}j"
+                            elif self.srgssr.bu == "srf":
+                                time_left_str = f"In {days_start}T"
+                            elif self.srgssr.bu == "rsi":
+                                time_left_str = f"Tra {days_start}g"
+                            else:
+                                time_left_str = f"In {days_start}d"
+                        elif hours_start > 0:
+                            if self.srgssr.bu == "rts":
+                                time_left_str = f"Dans {hours_start}h"
+                            elif self.srgssr.bu == "srf":
+                                time_left_str = f"In {hours_start}Std"
+                            elif self.srgssr.bu == "rsi":
+                                time_left_str = f"Tra {hours_start}o"
+                            else:
+                                time_left_str = f"In {hours_start}h"
+                        else:
+                            if self.srgssr.bu == "rts":
+                                time_left_str = "Commence bientôt"
+                            elif self.srgssr.bu == "srf":
+                                time_left_str = "Beginnt bald"
+                            elif self.srgssr.bu == "rsi":
+                                time_left_str = "Inizia presto"
+                            else:
+                                time_left_str = "Starting soon"
+
+                        title = f"[COLOR {color}][{time_left_str}][/COLOR] {title}"
+
+                # Case 2: Already started / available, and expiring soon (within 30 days)
+                elif (valid_to_dt - now_dt).total_seconds() > 0 and (valid_to_dt - now_dt).days <= 30:
+                    delta = valid_to_dt - now_dt
                     days = delta.days
                     hours = delta.seconds // 3600
                     color = "gold"
