@@ -234,12 +234,17 @@ class MenuBuilder:
             self.srgssr.log("No media found.")
             return
 
-        items = (
-            utils.try_get(data, "data", list, [])
-            or utils.try_get(data, "medias", list, [])
-            or utils.try_get(data, "results", list, [])
-            or data
-        )
+        items = utils.try_get(data, "data", list, None)
+        if items is None:
+            items = utils.try_get(data, "medias", list, None)
+        if items is None:
+            items = utils.try_get(data, "results", list, None)
+        if items is None:
+            items = data if isinstance(data, list) else []
+
+        if not items:
+            self.srgssr.log("No items found.")
+            return
 
         for item in items:
             self.build_entry_apiv3(
