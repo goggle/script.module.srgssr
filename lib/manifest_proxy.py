@@ -63,8 +63,8 @@ class ManifestProxyServer:
 
             def _send_headers(self, length):
                 self.send_response(200)
-                self.send_header('Content-type', 'application/dash+xml')
-                self.send_header('Content-Length', str(length))
+                self.send_header("Content-type", "application/dash+xml")
+                self.send_header("Content-Length", str(length))
                 self.end_headers()
 
             def do_HEAD(self):
@@ -83,7 +83,7 @@ class ManifestProxyServer:
                 self._send_headers(len(body))
                 self.wfile.write(body)
 
-        self._server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.port = self._server.server_port
 
         threading.Thread(target=self._run_server, daemon=True).start()
@@ -111,9 +111,7 @@ class ManifestProxyServer:
             with self._lock:
                 idle = time.monotonic() - self._last_request
             if idle > IDLE_TIMEOUT_SECONDS:
-                self._log(
-                    "ManifestProxyServer: idle timeout reached, shutting down"
-                )
+                self._log("ManifestProxyServer: idle timeout reached, shutting down")
                 self.stop()
                 break
 
@@ -138,8 +136,7 @@ class ManifestProxyServer:
                 break
             if time.monotonic() - start > STARTUP_TIMEOUT_SECONDS:
                 self._log(
-                    "ManifestProxyServer: playback never started, "
-                    "shutting down"
+                    "ManifestProxyServer: playback never started, " "shutting down"
                 )
                 self.stop()
                 return
@@ -147,9 +144,7 @@ class ManifestProxyServer:
                 return
 
         while not self._stopped.is_set():
-            if not (
-                player.isPlayingVideo() and player.getPlayingFile() == self.url
-            ):
+            if not (player.isPlayingVideo() and player.getPlayingFile() == self.url):
                 break
             if self._stopped.wait(poll_interval):
                 return
