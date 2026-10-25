@@ -64,6 +64,78 @@ def get_params():
     return dict(parse_qsl(sys.argv[2][1:]))
 
 
+STATIC_TRANSLATIONS = {
+    "fr": {
+        30050: "Toutes les émissions",
+        30051: "Émissions favorites",
+        30052: "Nouvelles émissions favorites",
+        30053: "Recommandations",
+        30057: "Émissions par date",
+        30058: "Thèmes",
+        30060: "Page d'accueil",
+        30073: "Page suivante",
+        30074: "YouTube",
+        30085: "Recherche",
+        30110: "Chaînes YouTube",
+        30111: "Dernières vidéos YouTube",
+        30112: "Rechercher des vidéos",
+        30115: "Rechercher",
+        30116: "Dernières recherches de vidéos",
+    },
+    "de": {
+        30050: "Alle Sendungen",
+        30051: "Bevorzugte Sendungen",
+        30052: "Neuste bevorzugte Sendungen",
+        30053: "Empfehlungen",
+        30057: "Sendungen nach Datum",
+        30058: "Themen",
+        30060: "Startseite",
+        30073: "Nächste Seite",
+        30074: "YouTube",
+        30085: "Suche",
+        30110: "YouTube Kanäle",
+        30111: "Neuste YouTube Videos",
+        30112: "Videos suchen",
+        30115: "Suche",
+        30116: "Neuste Videosuchen",
+    },
+    "it": {
+        30050: "Tutti i programmi",
+        30051: "Programmi preferiti",
+        30052: "Nuovi show preferiti",
+        30053: "Consigli",
+        30057: "Programmi per data",
+        30058: "Temi",
+        30060: "Pagina iniziale",
+        30073: "Pagina successiva",
+        30074: "YouTube",
+        30085: "Cerca",
+        30110: "Canali YouTube",
+        30111: "Ultimi video YouTube",
+        30112: "Cerca video",
+        30115: "Cerca",
+        30116: "Ricerche video recenti",
+    },
+    "rm": {
+        30050: "Tuts ils programs",
+        30051: "Programs favurits",
+        30052: "Novas missiuns favuritas",
+        30053: "Recumandaziuns",
+        30057: "Programs tenor data",
+        30058: "Temas",
+        30060: "Pagina principala",
+        30073: "Proxima pagina",
+        30074: "YouTube",
+        30085: "Tschertgar",
+        30110: "Canals da YouTube",
+        30111: "Ultims videos da YouTube",
+        30112: "Tschertgar videos",
+        30115: "Tschertgar",
+        30116: "Ultimas tschertgas da videos",
+    }
+}
+
+
 class SRGSSR:
     """
     Base class for all SRG SSR related plugins.
@@ -79,14 +151,16 @@ class SRGSSR:
         self.addon_id = addon_id
         self.icon = self.real_settings.getAddonInfo("icon")
         self.fanart = self.real_settings.getAddonInfo("fanart")
-        self.language = LANGUAGE
-        self.plugin_language = self.real_settings.getLocalizedString
+        self.language = self.get_localized_string
+        self.plugin_language = self.get_localized_string
         self.host_url = f"https://www.{bu}.ch"
         if bu == "swi":
             self.host_url = "https://play.swissinfo.ch"
         self.apiv3_url = f"{self.host_url}/play/v3/api/{bu}/production/"
         self.data_uri = f"special://home/addons/{self.addon_id}/resources/data"
-        self.media_uri = f"special://home/addons/{self.addon_id}/resources/media"
+        self.media_uri = (
+            f"special://home/addons/{self.addon_id}/resources/media"
+        )
 
         # Plugin options
         self.debug = self.get_boolean_setting("Enable_Debugging")
@@ -109,6 +183,53 @@ class SRGSSR:
         for filename in filenames:
             if filename.startswith("urn") and filename.endswith(".vtt"):
                 xbmcvfs.delete(clean_dir + "/" + filename)
+
+    def get_localized_string(self, id_or_str):
+        """
+        Returns a localized string according to Kodi's locale,
+        falling back to the business unit's (BU's) native Swiss language
+        if Kodi is running in a non-Swiss language (to prevent language mixing).
+        """
+        try:
+            val_id = int(id_or_str)
+        except (ValueError, TypeError):
+            return str(id_or_str)
+
+        # 1. Determine target BU language
+        bu_lang = "en"
+        if self.bu == "rts":
+            bu_lang = "fr"
+        elif self.bu == "srf":
+            bu_lang = "de"
+        elif self.bu == "rsi":
+            bu_lang = "it"
+        elif self.bu == "rtr":
+            bu_lang = "rm"
+
+        # 2. Determine active Kodi language
+        try:
+            kodi_lang = xbmc.getLanguage(xbmc.ISO_639_1, True)
+        except Exception:
+            kodi_lang = "en"
+
+        # Check if Kodi is running in a Swiss language
+        is_swiss_lang = False
+        kodi_lang_lower = kodi_lang.lower()
+        for sl in ("de", "fr", "it", "rm"):
+            if sl in kodi_lang_lower:
+                is_swiss_lang = True
+                break
+
+        # 3. If Kodi is not in a Swiss language, force the BU's native language!
+        if not is_swiss_lang and bu_lang in STATIC_TRANSLATIONS:
+            if val_id in STATIC_TRANSLATIONS[bu_lang]:
+                return STATIC_TRANSLATIONS[bu_lang][val_id]
+
+        # 4. Otherwise, fallback to Kodi's native translation
+        try:
+            return self.real_settings.getLocalizedString(val_id)
+        except Exception:
+            return ""
 
     def get_boolean_setting(self, setting):
         """
@@ -134,7 +255,15 @@ class SRGSSR:
             xbmc.log(msg=message, level=level)
 
     @staticmethod
-    def build_url(mode=None, name=None, url=None, page_hash=None, page=None):
+    def build_url(
+        mode=None,
+        name=None,
+        url=None,
+        page_hash=None,
+        page=None,
+        title=None,
+        resume=None,
+    ):
         """Build a URL for the Kodi plugin.
 
         Keyword arguments:
@@ -144,6 +273,10 @@ class SRGSSR:
         page_hash -- a string (used to get additional videos through the API)
         page      -- an integer used to indicate the current page in
                      the list of items
+        title     -- fallback title for the target mode (e.g. scheduled
+                     livestream events)
+        resume    -- a resume position in seconds, for mode=50 (play_video)
+                     to seek to on start instead of playing from 0
         """
         try:
             mode = str(mode)
@@ -153,9 +286,15 @@ class SRGSSR:
             page = str(page)
         except Exception:
             pass
+        try:
+            resume = str(resume) if resume else None
+        except Exception:
+            resume = None
         added = False
-        queries = (url, mode, name, page_hash, page)
-        query_names = ("url", "mode", "name", "page_hash", "page")
+        queries = (url, mode, name, page_hash, page, title, resume)
+        query_names = (
+            "url", "mode", "name", "page_hash", "page", "title", "resume",
+        )
         purl = sys.argv[0]
         for query, qname in zip(queries, query_names):
             if query:
@@ -165,17 +304,22 @@ class SRGSSR:
                 added = True
         return purl
 
-    def open_url(self, url, use_cache=True):
+    def open_url(self, url, use_cache=True, notify_on_error=True):
         """Open and read the content given by a URL.
 
         Keyword arguments:
-        url       -- the URL to open as a string
-        use_cache -- boolean to indicate if the cache provided by the
-                     Kodi module SimpleCache should be used (default: True)
+        url              -- the URL to open as a string
+        use_cache        -- boolean to indicate if the cache provided by
+                             the Kodi module SimpleCache should be used
+                             (default: True)
+        notify_on_error  -- boolean to indicate if a UI notification should be
+                             shown on failure (default: True)
         """
         self.log("open_url, url = " + str(url))
         cache_response = (
-            self.cache.get(f"{ADDON_NAME}.open_url, url = {url}") if use_cache else None
+            self.cache.get(f"{ADDON_NAME}.open_url, url = {url}")
+            if use_cache
+            else None
         )
         if not cache_response:
             headers = {
@@ -187,7 +331,10 @@ class SRGSSR:
             response = requests.get(url, headers=headers)
             if not response.ok:
                 self.log(f"open_url: Failed to open url {url}")
-                xbmcgui.Dialog().notification(ADDON_NAME, LANGUAGE(30100), ICON, 4000)
+                if notify_on_error:
+                    xbmcgui.Dialog().notification(
+                        ADDON_NAME, LANGUAGE(30100), ICON, 4000
+                    )
                 return ""
             response.encoding = "UTF-8"
             self.cache.set(
@@ -218,20 +365,24 @@ class SRGSSR:
         data = json.loads(self.open_url(self.apiv3_url + "shows"))
         return utils.try_get(data, "data", list, [])
 
-    def get_auth_url(self, url, segment_data=None):
+    def get_auth_url(self, url, segment_data=None, notify_on_error=True):
         """
         Returns the authenticated URL from a given stream URL.
 
         Keyword arguments:
-        url -- a given stream URL
+        url              -- a given stream URL
+        notify_on_error  -- boolean to indicate if a UI notification should be
+                             shown if the token request fails (default: True)
         """
         self.log(f"get_auth_url, url = {url}")
         spl = urlps(url).path.split("/")
         token = (
             json.loads(
                 self.open_url(
-                    f"https://tp.srgssr.ch/akahd/token?acl=/{spl[1]}/{spl[2]}/*",
+                    "https://tp.srgssr.ch/akahd/token"
+                    f"?acl=/{spl[1]}/{spl[2]}/*",
                     use_cache=False,
+                    notify_on_error=notify_on_error,
                 )
             )
             or {}
