@@ -298,42 +298,23 @@ class MenuBuilder:
         """
         Builds the homepage menu.
         """
-        self.build_menu_from_page(
-            self.srgssr.playtv_url,
-            (
-                "state",
-                "loaderData",
-                "play-now",
-                "initialData",
-                "pacPageConfigs",
-                "landingPage",
-                "sections",
-            ),
-        )
+        self.build_menu_from_api("landing-page")
 
-    def build_menu_from_page(self, url, path):
+    def build_menu_from_api(self, query):
         """
-        Builds a menu by extracting some content directly from a website.
+        Builds a menu from the sections of a page provided by the v3 API.
 
         Keyword arguments:
-        url     -- the url of the website
-        path    -- the path to the relevant data in the json (as tuple
-                   or list of strings)
+        query   -- the API query of the page (e.g. 'landing-page')
         """
-        html = self.srgssr.open_url(url)
-        m = re.search(self.srgssr.data_regex, html)
-        if not m:
-            self.srgssr.log("build_menu_from_page: No data found in html")
-            return
-        content = m.groups()[0]
         try:
-            js = json.loads(content)
+            js = json.loads(self.srgssr.open_url(self.srgssr.apiv3_url + query))
         except Exception:
-            self.srgssr.log("build_menu_from_page: Invalid json")
+            self.srgssr.log("build_menu_from_api: Invalid json")
             return
-        data = utils.try_get(js, path, list, [])
+        data = utils.try_get(js, ("data", "sections"), list, [])
         if not data:
-            self.srgssr.log("build_menu_from_page: Could not find any data in json")
+            self.srgssr.log("build_menu_from_api: Could not find any sections in json")
             return
         for elem in data:
             try:
@@ -591,19 +572,7 @@ class MenuBuilder:
         elif "video" in urn:
             self.build_episode_menu(id)
         elif "topic" in urn:
-            self.build_menu_from_page(
-                self.srgssr.playtv_url,
-                (
-                    "state",
-                    "loaderData",
-                    "play-now",
-                    "initialData",
-                    "pacPageConfigs",
-                    "topicPages",
-                    urn,
-                    "sections",
-                ),
-            )
+            self.build_menu_from_api(f"topic-page?topicUrn={urn}")
 
     def build_entry(
         self,

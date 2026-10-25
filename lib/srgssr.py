@@ -84,9 +84,7 @@ class SRGSSR:
         self.host_url = f"https://www.{bu}.ch"
         if bu == "swi":
             self.host_url = "https://play.swissinfo.ch"
-        self.playtv_url = f"{self.host_url}/play/tv"
         self.apiv3_url = f"{self.host_url}/play/v3/api/{bu}/production/"
-        self.data_regex = r"window.__remixContext\s*=\s*(.+?);\s*</script>"
         self.data_uri = f"special://home/addons/{self.addon_id}/resources/data"
         self.media_uri = f"special://home/addons/{self.addon_id}/resources/media"
 
